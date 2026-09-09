@@ -6,6 +6,7 @@ const configuredStartBlock=process.env.NEXT_PUBLIC_LIQPAD_FACTORY_START_BLOCK||'
 if(!/^\d+$/.test(configuredStartBlock))throw new Error('Invalid NEXT_PUBLIC_LIQPAD_FACTORY_START_BLOCK');
 export const FACTORY_START_BLOCK = BigInt(configuredStartBlock);
 export const POTPAL = '0xB20000000000000000000010238055932234F173' as Address;
+export const LIQPAD_TOKEN = '0x06CF0C77cfE887F3e8fE632E533e182eEF78C865' as Address;
 
 function configuredAddress(name: string, canonical: string): Address {
   const value = process.env[name] || canonical;
