@@ -1,0 +1,1 @@
+import {getLaunches} from '@/lib/data'; import {MeView} from '@/components/me-view'; export const dynamic='force-dynamic'; export default async function Page(){return <MeView launches={await getLaunches()}/>}
