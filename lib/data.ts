@@ -1,11 +1,14 @@
-import { createPublicClient, http, parseAbiItem, type Address } from 'viem';
-import { chain, rpcUrl } from './chain';
+import { createPublicClient, fallback, http, parseAbiItem, type Address } from 'viem';
+import { chain, rpcUrl, serverRpcUrl } from './chain';
 import { ADDRESSES, FACTORY_START_BLOCK } from './constants';
 import { factoryAbi } from '@/src/abi/factory';
 import { hasSupabase, supabaseBrowser } from './supabase';
 
 export type Launch = { token:Address; creator:Address; poolId:`0x${string}`; profileHash:`0x${string}`; blockNumber:bigint; blockTimestamp?:string; name:string; symbol:string; image:string; description:string; website:string; twitter:string; telegram:string; farcaster:string; discord:string; contractURI:string; quoteFrame?:number; legacy?:boolean };
-export const publicClient = createPublicClient({ chain, transport:http(rpcUrl) });
+const rpcTransports=[serverRpcUrl,rpcUrl]
+  .filter((url,index,urls):url is string=>Boolean(url)&&urls.indexOf(url)===index)
+  .map(url=>http(url,{retryCount:2,retryDelay:250,timeout:10_000}));
+export const publicClient = createPublicClient({chain,transport:rpcTransports.length>1?fallback(rpcTransports):rpcTransports[0]||http()});
 
 export async function getOnchainLaunches(): Promise<Launch[]> {
   try {

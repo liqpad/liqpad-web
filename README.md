@@ -10,7 +10,7 @@ cp .env.example .env.local
 pnpm dev
 ```
 
-Open http://localhost:3000. Configure `NEXT_PUBLIC_BASE_RPC_URL`, WalletConnect, Pinata, and Supabase in `.env.local`. Launcher v1 is Base mainnet (`8453`) only.
+Open http://localhost:3000. Configure WalletConnect, Pinata, and Supabase in `.env.local`. Set `BASE_RPC_URL` to an authenticated Base RPC; it stays server-only and powers launch quotes, indexing, and the allowlisted read-only `/api/rpc` browser proxy. Keep `NEXT_PUBLIC_BASE_RPC_URL=/api/rpc` so the provider URL and credentials are never shipped to the browser. Launcher v1 is Base mainnet (`8453`) only.
 
 ## Secure launch quotes
 
