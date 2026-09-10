@@ -24,6 +24,8 @@ alter table public.tokens add column if not exists quote_valid_until timestamptz
 alter table public.tokens add column if not exists quote_digest text;
 alter table public.tokens add column if not exists launch_version text not null default 'legacy';
 alter table public.tokens add column if not exists is_legacy boolean not null default true;
+-- Human-readable B20 units (18-decimal raw values are normalized by the market indexer).
+alter table public.tokens add column if not exists burned_b20 numeric;
 create index if not exists tokens_creator_idx on public.tokens (lower(creator));
 create index if not exists tokens_factory_idx on public.tokens (lower(factory_address));
 create index if not exists tokens_block_idx on public.tokens (block_number desc);

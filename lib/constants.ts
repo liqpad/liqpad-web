@@ -41,4 +41,6 @@ export const FACTORY_INDEXER_KEY = `factory_launches:v1:${ADDRESSES.factory.toLo
 export const PROTOCOL_INDEXER_KEY = `protocol_events:v1:${ADDRESSES.feeRouter.toLowerCase()}`;
 export const SWAP_INDEXER_KEY = `swap_events:v1:${ADDRESSES.swapRouter.toLowerCase()}`;
 export const SUPPLY = 1_000_000_000n;
+export const TOKEN_DECIMALS = 18;
+export const INITIAL_SUPPLY_RAW = SUPPLY * 10n ** BigInt(TOKEN_DECIMALS);
 export const TICK_SPACING = 200;

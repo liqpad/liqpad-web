@@ -1,12 +1,14 @@
 import 'server-only';
 import {formatUnits,getAddress,type Address} from 'viem';
 import {ADDRESSES,SUPPLY} from '@/lib/constants';
+import {burnedSupplyRaw} from '@/lib/burn';
 import {publicClient} from '@/lib/data';
 import {getAssetUsdPrices} from '@/lib/asset-prices';
 import {swapUsdSnapshot,type PendingSwap} from '@/lib/market';
 import {supabaseAdmin,supabaseBrowser} from '@/lib/supabase';
 import {swapRouterAbi} from '@/src/abi/swapRouter';
 import {v4QuoterAbi} from '@/src/abi/swapSupport';
+import {erc20Abi} from '@/src/abi/common';
 
 const SAMPLE_VVV=100_000_000_000_000_000n;
 async function updateTokenPrice(token:Address,vvvUsd:number|null){
@@ -35,7 +37,13 @@ export async function syncMarketMetrics(){
     if(error)throw new Error(error.message);pricedSwaps++;
   }
   for(const item of tokens||[]){
-    try{const token=getAddress(item.address);const values=await updateTokenPrice(token,priceData.prices.VVV);if(!values)continue;const {error}=await db.from('tokens').update(values).eq('address',item.address);if(error)throw new Error(error.message);if(values.price_usd!=null){const {error:snapshotError}=await db.from('token_price_snapshots').insert({token,price_vvv:values.price_vvv,price_usd:values.price_usd,market_cap_usd:values.market_cap_usd});if(snapshotError)throw new Error(snapshotError.message)}pricedTokens++}catch{/* A new/uninitialized pool must not block other tokens. */}
+    const token=getAddress(item.address);
+    try{
+      const totalSupply=await publicClient.readContract({address:token,abi:erc20Abi,functionName:'totalSupply'});
+      const {error}=await db.from('tokens').update({burned_b20:formatUnits(burnedSupplyRaw(totalSupply),18),updated_at:new Date().toISOString()}).eq('address',item.address);
+      if(error)throw new Error(error.message);
+    }catch{/* A failed supply read must not block price indexing. */}
+    try{const values=await updateTokenPrice(token,priceData.prices.VVV);if(!values)continue;const {error}=await db.from('tokens').update(values).eq('address',item.address);if(error)throw new Error(error.message);if(values.price_usd!=null){const {error:snapshotError}=await db.from('token_price_snapshots').insert({token,price_vvv:values.price_vvv,price_usd:values.price_usd,market_cap_usd:values.market_cap_usd});if(snapshotError)throw new Error(snapshotError.message)}pricedTokens++}catch{/* A new/uninitialized pool must not block other tokens. */}
   }
   const {error:aggregateError}=await db.rpc('refresh_market_aggregates',{production_factory:ADDRESSES.factory.toLowerCase()});
   if(aggregateError)throw new Error(aggregateError.message);
