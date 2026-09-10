@@ -1,0 +1,3 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {normalizeSocialUrl} from '../lib/social-links';
+test('normalizes handles and bare website domains',()=>{assert.equal(normalizeSocialUrl('x','@liqpad'),'https://x.com/liqpad');assert.equal(normalizeSocialUrl('telegram','liqpad'),'https://t.me/liqpad');assert.equal(normalizeSocialUrl('farcaster','liqpad'),'https://warpcast.com/liqpad');assert.equal(normalizeSocialUrl('website','liqpad.com'),'https://liqpad.com/')});
+test('rejects unsafe and off-platform social links',()=>{assert.equal(normalizeSocialUrl('website','javascript:alert(1)'),null);assert.equal(normalizeSocialUrl('x','https://example.com/liqpad'),null);assert.equal(normalizeSocialUrl('discord',''),null)});

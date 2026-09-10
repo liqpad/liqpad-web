@@ -6,3 +6,4 @@
 .burn-flame>i{left:5px;bottom:1px;width:7px;height:10px;background:linear-gradient(135deg,#67e8f9,#fef08a);box-shadow:none}
 .burn-flame-active{animation:burn-flicker 1.15s ease-in-out infinite;transform-origin:50% 100%}
 @media (prefers-reduced-motion:reduce){.burn-flame-active{animation:none}}
+.social-icon{display:grid;width:18px;height:18px;place-items:center;flex:none}.social-icon svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}

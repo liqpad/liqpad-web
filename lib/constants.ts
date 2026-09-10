@@ -7,7 +7,8 @@ if(!/^\d+$/.test(configuredStartBlock))throw new Error('Invalid NEXT_PUBLIC_LIQP
 export const FACTORY_START_BLOCK = BigInt(configuredStartBlock);
 export const FEE_ROUTER_START_BLOCK = 51_050_150n;
 export const POTPAL = '0xB20000000000000000000010238055932234F173' as Address;
-export const LIQPAD_TOKEN = '0x06CF0C77cfE887F3e8fE632E533e182eEF78C865' as Address;
+export const LIQPAD_TOKEN = '0xB200000000000000000000Fa2F036b02356E2b07' as Address;
+export const LIQPAD_POOL_ID = '0x39d8ccf1f545412e9dcf759cd6e0aae0c46a96fb189d3d368b25f1bd4e3039c6' as const;
 
 function configuredAddress(name: string, canonical: string): Address {
   const value = process.env[name] || canonical;
