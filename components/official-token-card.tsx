@@ -4,7 +4,7 @@ import Image from 'next/image';
 import {useState} from 'react';
 import {useQuery} from '@tanstack/react-query';
 import {LIQPAD_TOKEN} from '@/lib/constants';
-import {short} from '@/lib/data';
+import {short} from '@/lib/utils';
 import {usd,usdPrice} from '@/lib/swap';
 
 type Market={priceUsd:number|null;marketCapUsd:number|null;volume24hUsd:number|null;change24h:number|null;pairUrl:string|null};

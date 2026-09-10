@@ -4,6 +4,7 @@ import { Providers } from '@/components/providers';
 import { Header } from '@/components/header';
 import { Footer } from '@/components/footer';
 import { SITE_URL } from '@/lib/constants';
+import {GeistMono} from 'geist/font/mono';
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -15,5 +16,5 @@ export const metadata: Metadata = {
 };
 
 export default function Layout({ children }: { children: React.ReactNode }) {
-  return <html lang="en"><body className="font-mono"><Providers><Header/><main className="min-h-screen">{children}</main><Footer/></Providers></body></html>;
+  return <html lang="en" className={GeistMono.variable}><body className="font-sans"><Providers><Header/><main className="min-h-screen">{children}</main><Footer/></Providers></body></html>;
 }

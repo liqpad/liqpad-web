@@ -22,7 +22,13 @@ The browser shows the signed frame, ticks, estimated FDV, expiry countdown, and 
 
 Run `supabase/schema.sql` in the Supabase SQL editor, then configure `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY`. The migration preserves old rows as `legacy`, adds quote fields, and creates the Launcher v1 checkpoint at block `51050148` so the first scanned block is `51050149`.
 
-Call protected `POST /api/indexer/sync` with `Authorization: Bearer $INDEXER_SECRET`. Small resumable ranges decode both `Launch` and `LaunchQuoteUsed`, fetch `getProfile`, and idempotently upsert by case-insensitive token identity. Only the production Factory is queried for active v1 launches.
+Call protected `POST /api/indexer/sync` with `Authorization: Bearer $INDEXER_SECRET`. Small resumable ranges decode `Launch`, `LaunchQuoteUsed`, protocol events, and the production SwapRouter's `SwapExecuted` logs. Writes are idempotent, and each stream keeps its own checkpoint. Continue until the top-level `caughtUp`, `protocol.caughtUp`, and `swaps.caughtUp` values are all `true`. Only the production Factory and SwapRouter are indexed.
+
+The token detail page reads the latest 20 confirmed swaps from `GET /api/swaps?token=0x…`, shows exact paid/received amounts, and estimates USD from the routed ETH, USDC, or VVV leg. Set `SWAP_INDEXER_START_BLOCK` to the SwapRouter deployment block when known; otherwise it safely starts at the Factory checkpoint. Schedule the protected sync endpoint regularly in production so new swaps appear without relying on a visitor's RPC connection.
+
+After log sync, the same endpoint runs the market stage. It snapshots an index-time USD estimate for unpriced swaps, quotes every initialized B20/VVV pool, stores current price/market cap and periodic price snapshots, calculates 24-hour token activity, then refreshes the `liqpad-v1` aggregate row. The Discover strip reports production Factory launches, all-time indexed USD volume, unique payer wallets, and the current highest market cap. Missing FX remains null and is displayed as unavailable rather than zero. Apply the latest `supabase/schema.sql` before enabling this stage, and continue sync until `market.caughtUp` is also `true` without an `error` field.
+
+Discover queries `GET /api/tokens` in 24-item server-side pages, including database-backed search and sorting. Desktop uses numbered navigation and mobile uses compact previous/next controls. Latest swaps use a stable block/log cursor with “Load older swaps”; transparency tables render 20–25 rows per page, creator launches use 12-item URL pages, and `/me` reveals created tokens in batches of 12.
 
 ## Trading
 
@@ -48,4 +54,10 @@ pnpm test
 pnpm build
 ```
 
-Liqpad · liqpad.com
+# Protocol transparency
+
+`/transparency` is a read-only Base dashboard for Liqpad's 30% protocol-owned Venice capital allocation. Current balances and DiemEngine counters are read through the existing RPC architecture; confirmed `FeeAccrued`, `PlatformSwept`, `Harvest`, and unwind/status events are stored idempotently in Supabase.
+
+VVV/USD uses CoinGecko with DefiLlama fallback. DIEM/USD uses GeckoTerminal's public Base token-price endpoint with a 30-second server cache. The sVVV balance is read from its ERC-1967 proxy; the verified implementation is linked separately for transparency.
+
+Apply the additive statements in `supabase/schema.sql`, then run the existing authenticated indexer endpoint until the factory, `protocol`, and `swaps` results report `caughtUp: true`. The protocol and swap indexers wait 12 confirmations. Protocol history can be overridden with server-only `DIEM_ENGINE_START_BLOCK`; swap history can be narrowed to the router deployment block with `SWAP_INDEXER_START_BLOCK`.

@@ -11,7 +11,7 @@ import {factoryAbi} from '@/src/abi/factory';
 import {ImageUpload} from '@/components/image-upload';
 import {LaunchPreview} from '@/components/launch-preview';
 import {LaunchTransactionOverlay} from '@/components/launch-transaction-overlay';
-import {short} from '@/lib/data';
+import {short} from '@/lib/utils';
 
 type Form={name:string;symbol:string;image:string;description:string;website:string;twitter:string;telegram:string;farcaster:string;discord:string;targetFdv:string};
 const blank:Form={name:'',symbol:'',image:'',description:'',website:'',twitter:'',telegram:'',farcaster:'',discord:'',targetFdv:'10000'};

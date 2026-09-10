@@ -2,11 +2,11 @@
 import Link from 'next/link';
 import { useAccount, useConnect, useDisconnect, useSwitchChain } from 'wagmi';
 import { chain } from '@/lib/chain';
-import { short } from '@/lib/data';
+import { short } from '@/lib/utils';
 import Image from 'next/image';
 import { MobileNav } from '@/components/mobile-nav';
 
-const nav = [['/', 'Discover'], ['/launch', 'Launch'], ['/docs', 'Docs']];
+const nav = [['/', 'Discover'], ['/launch', 'Launch'], ['/transparency', 'Transparency'], ['/docs', 'Docs']];
 export function Header() {
   const { address, chainId, isConnected } = useAccount();
   const { connectors, connect, isPending } = useConnect();

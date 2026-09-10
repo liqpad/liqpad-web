@@ -1,2 +1,11 @@
-import {Discover} from '@/components/discover'; import {getLaunches,publicClient} from '@/lib/data'; import {ADDRESSES} from '@/lib/constants'; import {compactToken} from '@/lib/swap'; import {erc20Abi} from '@/src/abi/common'; import {feeRouterAbi} from '@/src/abi/feeRouter'; export const revalidate=30; export const dynamic='force-dynamic';
-export default async function Home(){const [launches,engineRead,pendingRead]=await Promise.all([getLaunches(),publicClient.readContract({address:ADDRESSES.vvv,abi:erc20Abi,functionName:'balanceOf',args:[ADDRESSES.diemEngine]}).then(value=>({value})).catch(()=>({error:true as const})),publicClient.readContract({address:ADDRESSES.feeRouter,abi:feeRouterAbi,functionName:'platformAccrued'}).then(value=>({value})).catch(()=>({error:true as const}))]);const engine='value'in engineRead?`${compactToken(engineRead.value)} VVV`:'Unavailable';const pending='value'in pendingRead?`${compactToken(pendingRead.value)} VVV awaiting sweep`:'Pending fees unavailable';return <Discover launches={launches} vvvBalance={engine} pendingProtocolFees={pending}/>}
+import {Discover} from '@/components/discover';
+import {getLaunchPage} from '@/lib/data';
+import {getProtocolMetrics} from '@/lib/market-indexer';
+
+export const revalidate=30;
+export const dynamic='force-dynamic';
+
+export default async function Home(){
+  const [launchPage,metrics]=await Promise.all([getLaunchPage(),getProtocolMetrics()]);
+  return <Discover initialPage={launchPage} metrics={metrics.updatedAt?metrics:{...metrics,totalLaunches:launchPage.total}}/>;
+}

@@ -4,6 +4,9 @@ import { publicClient } from '@/lib/data';
 import { ADDRESSES, FACTORY_INDEXER_KEY, FACTORY_START_BLOCK } from '@/lib/constants';
 import { upsertLaunchLog } from '@/lib/launch-indexer';
 import { supabaseAdmin } from '@/lib/supabase';
+import { syncProtocolEvents } from '@/lib/protocol-indexer';
+import { syncSwapEvents } from '@/lib/swap-indexer';
+import { syncMarketMetrics } from '@/lib/market-indexer';
 
 export async function POST(req:Request) {
   const secret=process.env.INDEXER_SECRET;
@@ -37,7 +40,10 @@ export async function POST(req:Request) {
       if(error)throw new Error(error.message);
       next=end+1n;
     }
-    return NextResponse.json({synced,batches,lastBlock:last.toString(),latestBlock:latest.toString(),caughtUp:last>=latest});
+    const safe=async<T>(job:Promise<T>)=>job.catch(error=>({error:error instanceof Error?error.message:'Indexer failed.'}));
+    const [protocol,swaps]=await Promise.all([safe(syncProtocolEvents(latest)),safe(syncSwapEvents(latest))]);
+    const market=await safe(syncMarketMetrics());
+    return NextResponse.json({synced,batches,lastBlock:last.toString(),latestBlock:latest.toString(),caughtUp:last>=latest,protocol,swaps,market});
   } catch(error) {
     const message=error instanceof Error?error.message:'Indexer sync failed.';
     await db.from('indexer_state').upsert({key:FACTORY_INDEXER_KEY,last_block:last.toString(),updated_at:new Date().toISOString(),error:message});

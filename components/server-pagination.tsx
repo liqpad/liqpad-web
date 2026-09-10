@@ -1,0 +1,7 @@
+import Link from 'next/link';
+import {pageWindow} from '@/lib/pagination';
+
+export function ServerPagination({page,totalPages,totalItems,pageSize,basePath,label}:{page:number;totalPages:number;totalItems:number;pageSize:number;basePath:string;label:string}){
+  if(totalPages<=1)return null;const href=(value:number)=>`${basePath}?page=${value}`,from=(page-1)*pageSize+1,to=Math.min(page*pageSize,totalItems);
+  return <nav aria-label={`${label} pagination`} className="mt-6 flex flex-col items-center gap-3"><p className="text-xs text-muted">Showing {from}–{to} of {totalItems} {label}</p><div className="flex items-center gap-1"><Link aria-disabled={page<=1} tabIndex={page<=1?-1:undefined} href={page<=1?'#':href(page-1)} className={`btn btn-ghost px-3 ${page<=1?'pointer-events-none opacity-35':''}`}>← <span className="hidden sm:inline">Previous</span></Link><div className="hidden gap-1 sm:flex">{pageWindow(page,totalPages).map(value=><Link key={value} aria-current={value===page?'page':undefined} href={href(value)} className={`grid min-h-11 min-w-11 place-items-center rounded-xl border ${value===page?'border-cyan/40 bg-cyan/10 text-cyan':'border-white/10 text-muted'}`}>{value}</Link>)}</div><span className="px-2 text-xs text-muted sm:hidden">{page} / {totalPages}</span><Link aria-disabled={page>=totalPages} tabIndex={page>=totalPages?-1:undefined} href={page>=totalPages?'#':href(page+1)} className={`btn btn-ghost px-3 ${page>=totalPages?'pointer-events-none opacity-35':''}`}><span className="hidden sm:inline">Next</span> →</Link></div></nav>;
+}

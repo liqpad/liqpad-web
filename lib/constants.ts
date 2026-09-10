@@ -5,6 +5,7 @@ export const CHAIN_ID = 8453 as const;
 const configuredStartBlock=process.env.NEXT_PUBLIC_LIQPAD_FACTORY_START_BLOCK||'51050149';
 if(!/^\d+$/.test(configuredStartBlock))throw new Error('Invalid NEXT_PUBLIC_LIQPAD_FACTORY_START_BLOCK');
 export const FACTORY_START_BLOCK = BigInt(configuredStartBlock);
+export const FEE_ROUTER_START_BLOCK = 51_050_150n;
 export const POTPAL = '0xB20000000000000000000010238055932234F173' as Address;
 export const LIQPAD_TOKEN = '0x06CF0C77cfE887F3e8fE632E533e182eEF78C865' as Address;
 
@@ -29,6 +30,7 @@ export const ADDRESSES = {
   adapter: configuredAddress('NEXT_PUBLIC_VENICE_ADAPTER_ADDRESS', process.env.NEXT_PUBLIC_VENICE_ADAPTER_ADDRESS||'0xBEa3A03c4A76fADdBD77458525a4E36eAE64d746'),
   vvv: configuredAddress('NEXT_PUBLIC_VVV_ADDRESS', process.env.NEXT_PUBLIC_VVV_ADDRESS||'0xacfE6019Ed1A7Dc6f7B508C02d1b04ec88cC21bf'),
   svvv: '0x321b7ff75154472B18EDb199033fF4D116F340Ff', diem: '0xF4d97F2da56e8c3098f3a8D538DB630A2606a024',
+  svvvImplementation: '0xe37A7920dbc11253ac6d031C29f592f71B348DCA',
   poolManager: '0x498581fF718922c3f8e6A244956aF099B2652b2b', positionManager: '0x7C5f5A4bBd8fD63184577525326123B519429bDc',
   permit2: '0x000000000022D473030F116dDEE9F6B43aC78BA3', b20Factory: '0xB20f000000000000000000000000000000000000',
   v4Quoter: '0x0d5e0f971ed27fbff6c2837bf31316121532048d', aerodromeRouter: '0xcF77a3Ba9A5CA399B7c97c74d54e5b1Beb874E43',
@@ -36,5 +38,7 @@ export const ADDRESSES = {
 } as const satisfies Record<string, Address>;
 
 export const FACTORY_INDEXER_KEY = `factory_launches:v1:${ADDRESSES.factory.toLowerCase()}`;
+export const PROTOCOL_INDEXER_KEY = `protocol_events:v1:${ADDRESSES.feeRouter.toLowerCase()}`;
+export const SWAP_INDEXER_KEY = `swap_events:v1:${ADDRESSES.swapRouter.toLowerCase()}`;
 export const SUPPLY = 1_000_000_000n;
 export const TICK_SPACING = 200;

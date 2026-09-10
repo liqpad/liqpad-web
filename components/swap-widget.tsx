@@ -1,6 +1,6 @@
 'use client';
 import {useEffect,useMemo,useRef,useState} from 'react';
-import {useQuery} from '@tanstack/react-query';
+import {useQuery,useQueryClient} from '@tanstack/react-query';
 import {formatUnits,type Address} from 'viem';
 import {useAccount,useBalance,useChainId,usePublicClient,useReadContract,useSwitchChain,useWaitForTransactionReceipt,useWriteContract} from 'wagmi';
 import {chain} from '@/lib/chain';import {ADDRESSES} from '@/lib/constants';
@@ -9,6 +9,7 @@ import {useSwapQuote} from '@/hooks/useSwapQuote';import {erc20Abi} from '@/src/
 
 const ETH_GAS_RESERVE=100_000_000_000_000n;
 export function SwapWidget({token,symbol}:{token:Address;symbol:string}){
+  const queryClient=useQueryClient();
   const [side,setSide]=useState<SwapSide>('buy');const [asset,setAsset]=useState<RouteAsset>('ETH');const [input,setInput]=useState('');const [slippage,setSlippage]=useState(0.5);const [deadlineMinutes,setDeadlineMinutes]=useState(20);const [simulating,setSimulating]=useState(false);const [autoSwap,setAutoSwap]=useState(false);const [continueReady,setContinueReady]=useState(false);const [localError,setLocalError]=useState('');const handledApproval=useRef<string|undefined>(undefined);
   const {address,isConnected}=useAccount();const chainId=useChainId();const switchChain=useSwitchChain();const client=usePublicClient();
   const inputAsset=side==='buy'?asset:'VVV';const amountIn=useMemo(()=>parseAmount(input,inputAsset),[input,inputAsset]);const slippageBps=Math.max(1,Math.min(2000,Math.round(slippage*100)));
@@ -24,7 +25,7 @@ export function SwapWidget({token,symbol}:{token:Address;symbol:string}){
   // The confirmed approval hash is the state-machine trigger; the ref guard prevents duplicate wallet requests.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(()=>{if(!approveReceipt.isSuccess||!approve.data||handledApproval.current===approve.data)return;handledApproval.current=approve.data;void(async()=>{setAutoSwap(true);setContinueReady(false);setLocalError('');await allowance.refetch();const fresh=await quote.refetch();approve.reset();if(!fresh.data||fresh.data.amountIn!==amountIn){setLocalError('Approval succeeded, but the refreshed quote is unavailable. Select Continue to swap.');setContinueReady(true);setAutoSwap(false);return}const sent=await send(fresh.data);setContinueReady(!sent);setAutoSwap(false)})()},[approve.data,approveReceipt.isSuccess]);
-  useEffect(()=>{if(swapReceipt.isSuccess){void nativeBalance.refetch();void usdcBalance.refetch();void vvvBalance.refetch();void b20Balance.refetch();void allowance.refetch();void quote.refetch();const timer=setTimeout(()=>{swap.reset();setInput('')},1400);return()=>clearTimeout(timer)}},[allowance,b20Balance,nativeBalance,quote,swap,swapReceipt.isSuccess,usdcBalance,vvvBalance]);
+  useEffect(()=>{if(swapReceipt.isSuccess){void nativeBalance.refetch();void usdcBalance.refetch();void vvvBalance.refetch();void b20Balance.refetch();void allowance.refetch();void quote.refetch();void queryClient.invalidateQueries({queryKey:['latest-swaps',token]});const timer=setTimeout(()=>{swap.reset();setInput('')},1400);return()=>clearTimeout(timer)}},[allowance,b20Balance,nativeBalance,queryClient,quote,swap,swapReceipt.isSuccess,token,usdcBalance,vvvBalance]);
   const busy=simulating||autoSwap||approve.isPending||approveReceipt.isLoading||swap.isPending||swapReceipt.isLoading||swapReceipt.isSuccess;
   const routedOutputUsd=currentQuote?(asset==='USDC'?Number(formatUnits(currentQuote.output,6)):(fx.data?.prices[asset]||0)*Number(formatUnits(currentQuote.output,18))):undefined;
   const inputUsd=side==='buy'?Number(formatUnits(amountIn,assetDecimals(asset)))*(fx.data?.prices[asset]||0):routedOutputUsd;
