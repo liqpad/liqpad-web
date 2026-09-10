@@ -8,7 +8,7 @@ import {short} from '@/lib/utils';
 import {usd,usdPrice} from '@/lib/swap';
 import {BurnBadge} from '@/components/burn-indicator';
 
-type Market={priceUsd:number|null;marketCapUsd:number|null;volume24hUsd:number|null;change24h:number|null;burnedRaw:string|null;tokenUrl:string;source:string|null};
+type Market={priceUsd:number|null;marketCapUsd:number|null;volume24hUsd:number|null;change24h:number|null;burnedRaw:string|null;tokenUrl:string;poolUrl:string;source:'geckoterminal'|'liqpad-indexer'|null};
 
 export function OfficialTokenCard(){
   const [copied,setCopied]=useState(false);
@@ -30,7 +30,8 @@ export function OfficialTokenCard(){
       <div className="mt-4 rounded-2xl border border-orange-300/15 bg-orange-400/[.06] p-3.5 text-sm"><p className="mb-2 text-[10px] font-bold uppercase tracking-[.18em] text-muted">Deflation in motion</p><BurnBadge raw={market.data?.burnedRaw} symbol="LIQPAD"/></div>
       <div className="mt-4 rounded-2xl border border-white/10 bg-black/25 p-3.5"><p className="text-[10px] font-bold uppercase tracking-[.18em] text-muted">Contract address</p><p className="mt-2 truncate font-mono text-sm text-white sm:hidden">{short(LIQPAD_TOKEN)}</p><p className="mt-2 hidden break-all font-mono text-xs leading-5 text-white sm:block">{LIQPAD_TOKEN}</p></div>
       <div className="mt-3 grid grid-cols-2 gap-3"><button type="button" onClick={copy} className="btn btn-primary min-h-11">{copied?'Copied ✓':'Copy address'}</button><a className="btn btn-ghost inline-flex min-h-11 items-center justify-center" href={market.data?.tokenUrl||`/token/${LIQPAD_TOKEN}`}>Trade LIQPAD →</a></div>
-      <p className="mt-4 text-xs leading-5 text-muted">Price and volume from the Liqpad indexer · burn derived from initial supply minus current supply. Always verify the official contract address.</p>
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-2 text-xs text-muted"><span className="inline-flex items-center gap-2"><i className={`h-2 w-2 rounded-full ${market.data?.source==='geckoterminal'?'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,.7)]':'bg-cyan'}`}/>{market.isLoading?'Loading live market…':market.data?.source==='geckoterminal'?'Live via GeckoTerminal':'Liqpad indexed fallback'}</span><a href={market.data?.poolUrl||'#'} target="_blank" rel="noopener noreferrer" className={market.data?.poolUrl?'text-cyan hover:text-white':'pointer-events-none opacity-40'}>View pool ↗</a></div>
+      <p className="mt-2 text-[10px] leading-4 text-muted">Market cap uses current supply · burn is verified from totalSupply().</p>
     </div>
   </aside>
 }
