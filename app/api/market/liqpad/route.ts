@@ -8,6 +8,7 @@ import {supabaseAdmin,supabaseBrowser} from '@/lib/supabase';
 import {erc20Abi} from '@/src/abi/common';
 
 export const revalidate=30;
+export const dynamic='force-dynamic';
 type MarketRow={price_usd:string|number|null;market_cap_usd:string|number|null;volume_24h_usd:string|number|null;change_24h:string|number|null;burned_b20:string|number|null;updated_at:string|null};
 const numberOrNull=(value:string|number|null|undefined)=>{if(value==null)return null;const number=Number(value);return Number.isFinite(number)?number:null};
 const cachedBurnRaw=(value:string|number|null|undefined)=>{try{return value==null?null:parseUnits(String(value),18).toString()}catch{return null}};

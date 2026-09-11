@@ -12,6 +12,8 @@ export const diemEngineAbi=[
   {type:'function',name:'unwindDelay',stateMutability:'view',inputs:[],outputs:[{type:'uint256'}]},
   {type:'function',name:'autoStakeDiem',stateMutability:'view',inputs:[],outputs:[{type:'bool'}]},
   {type:'function',name:'harvestPaused',stateMutability:'view',inputs:[],outputs:[{type:'bool'}]},
+  {type:'function',name:'harvest',stateMutability:'nonpayable',inputs:[],outputs:[]},
+  {type:'function',name:'compound',stateMutability:'nonpayable',inputs:[],outputs:[]},
   ...['vvvReceived','vvvStaked','sVVVLocked','diemMinted','diemStaked','diemLiquid','accountedLiquidVVV','pendingUnwindDiem','unwindReadyAt'].map(name=>({type:'function' as const,name,stateMutability:'view' as const,inputs:[],outputs:[{type:'uint256' as const}]})),
   {type:'function',name:'unwindStarted',stateMutability:'view',inputs:[],outputs:[{type:'bool'}]},
 ] as const;

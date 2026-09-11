@@ -38,6 +38,8 @@ export const ADDRESSES = {
   aerodromeFactory: '0x420DD381b31aEf6683db6B902084cB0FFECe40Da', weth: '0x4200000000000000000000000000000000000006', usdc: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
 } as const satisfies Record<string, Address>;
 
+export const PROTOCOL_OPERATOR = configuredAddress('NEXT_PUBLIC_PROTOCOL_OPERATOR_ADDRESS', process.env.NEXT_PUBLIC_PROTOCOL_OPERATOR_ADDRESS||'0xca53938b27c29e50527dec1f2d6e488889435d8c');
+
 export const FACTORY_INDEXER_KEY = `factory_launches:v1:${ADDRESSES.factory.toLowerCase()}`;
 export const PROTOCOL_INDEXER_KEY = `protocol_events:v1:${ADDRESSES.feeRouter.toLowerCase()}`;
 export const SWAP_INDEXER_KEY = `swap_events:v1:${ADDRESSES.swapRouter.toLowerCase()}`;
