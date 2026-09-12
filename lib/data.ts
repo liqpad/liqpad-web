@@ -31,6 +31,18 @@ export async function getLaunches(): Promise<Launch[]> {
   return getOnchainLaunches();
 }
 
+export async function getLaunchByAddress(address:string):Promise<Launch|null>{
+  if(hasSupabase){
+    try{
+      const db=supabaseBrowser();
+      const {data,error}=await db!.from('tokens').select('*').eq('factory_address',ADDRESSES.factory.toLowerCase()).ilike('address',address).maybeSingle();
+      if(!error&&data)return launchFromRow(data);
+    }catch{/* on-chain fallback below */}
+  }
+  const launches=await getOnchainLaunches();
+  return launches.find(item=>item.token.toLowerCase()===address.toLowerCase())||null;
+}
+
 export async function getLaunchPage({page=1,pageSize=24,q='',sort='new',creator}:{page?:number;pageSize?:number;q?:string;sort?:string;creator?:string}={}):Promise<LaunchPage>{
   const safePage=Math.max(1,Math.floor(page)),safeSize=Math.max(1,Math.min(48,Math.floor(pageSize)));const db=hasSupabase?supabaseBrowser():null;
   if(db){

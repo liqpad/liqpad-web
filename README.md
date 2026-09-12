@@ -54,6 +54,15 @@ pnpm test
 pnpm build
 ```
 
+Liqpad · liqpad.com
+
+## SEO and social previews
+
+Every public page has a canonical `liqpad.com` URL, descriptive Open Graph and X metadata, and crawler directives. Token and creator routes are added to the dynamic sitemap from the active Factory index; wallet-specific `/me` and all `/api` routes are excluded from indexing. Organization, website, application, launch-list, token-page, breadcrumb, and creator-profile structured data is emitted as JSON-LD.
+
+The homepage social card is generated at `GET /api/og/site`. Each indexed token has a resilient `1200×630` card at `GET /api/og/token/[address]` with its logo, identity, price, market cap, volume, 24-hour change, burned supply, and locked-liquidity status. Missing market or image data produces a branded fallback rather than failing the image response. Social networks cache preview images independently, so live market figures are snapshots from the crawler request time.
+
+Real interface captures belong in `screenshots/`; follow `screenshots/README.md`. Do not commit mock screenshots or wallet-identifying overlays.
 # Protocol transparency
 
 `/transparency` is a read-only Base dashboard for Liqpad's 30% protocol-owned Venice capital allocation. Current balances and DiemEngine counters are read through the existing RPC architecture; confirmed `FeeAccrued`, `PlatformSwept`, `Harvest`, and unwind/status events are stored idempotently in Supabase.

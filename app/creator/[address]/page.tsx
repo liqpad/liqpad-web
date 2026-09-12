@@ -1,3 +1,4 @@
+import type {Metadata} from 'next';
 import {isAddress,type Address} from 'viem';
 import {notFound} from 'next/navigation';
 import Link from 'next/link';
@@ -5,8 +6,20 @@ import {getLaunches,getLaunchPage,short} from '@/lib/data';
 import {ClaimAll} from '@/components/claim-all';
 import {ServerPagination} from '@/components/server-pagination';
 import {usd} from '@/lib/swap';
+import {pageMetadata} from '@/lib/seo';
+import {SITE_URL} from '@/lib/constants';
+import {JsonLd} from '@/components/json-ld';
 
-export default async function Page({params,searchParams}:{params:Promise<{address:string}>;searchParams:Promise<{page?:string}>}){
+type Props={params:Promise<{address:string}>;searchParams:Promise<{page?:string}>};
+
+export async function generateMetadata({params}:Pick<Props,'params'>):Promise<Metadata>{
+  const {address}=await params;if(!isAddress(address))return pageMetadata({title:'Creator not found',description:'Invalid Liqpad creator address.',path:`/creator/${address}`,index:false});
+  const launches=await getLaunchPage({creator:address,page:1,pageSize:1});
+  return pageMetadata({title:`Creator ${short(address)}`,description:`Explore ${launches.total} B20 token${launches.total===1?'':'s'} launched by ${short(address)} through Liqpad on Base.`,path:`/creator/${address}`});
+}
+
+export default async function Page({params,searchParams}:Props){
   const [{address},{page:pageValue}]=await Promise.all([params,searchParams]);if(!isAddress(address))notFound();const page=Math.max(1,Number(pageValue)||1);const [all,pageData]=await Promise.all([getLaunches(),getLaunchPage({creator:address,page,pageSize:12})]);const creatorTokens=all.filter(item=>item.creator.toLowerCase()===address.toLowerCase());const combined=creatorTokens.every(item=>item.marketCapUsd!=null)?creatorTokens.reduce((sum,item)=>sum+(item.marketCapUsd||0),0):null;
-  return <div className="mx-auto max-w-5xl px-4 py-12"><div className="flex items-center gap-4"><div className="grid h-20 w-20 place-items-center rounded-full bg-gradient-to-br from-magenta to-cyan text-2xl font-black">{address.slice(2,4).toUpperCase()}</div><div><p className="text-sm text-cyan">Creator</p><h1 className="font-mono text-xl md:text-3xl">{short(address)}</h1></div></div><div className="mt-8 grid gap-4 md:grid-cols-3"><div className="card p-5"><p className="text-sm text-muted">Tokens launched</p><p className="mt-2 text-3xl font-bold">{pageData.total}</p></div><div className="card p-5"><p className="text-sm text-muted">Combined market cap</p><p className="mt-2 text-2xl font-bold">{usd(combined)}</p></div><ClaimAll creator={address as Address} tokens={creatorTokens.map(item=>item.token as Address)}/></div><h2 className="mt-12 font-display text-2xl font-bold">Launches</h2><div className="mt-4 space-y-3">{pageData.items.length?pageData.items.map(item=><Link className="card flex items-center p-4" href={`/token/${item.token}`} key={item.token}><b>{item.name}</b><span className="ml-2 text-muted">{item.symbol}</span><span className="ml-auto text-cyan">LP locked →</span></Link>):<div className="card p-10 text-center text-muted">This address has not launched a token in the indexed window.</div>}</div><ServerPagination page={pageData.page} totalPages={pageData.totalPages} totalItems={pageData.total} pageSize={pageData.pageSize} basePath={`/creator/${address}`} label="launches"/></div>;
+  const url=`${SITE_URL}/creator/${address}`;const structuredData={'@context':'https://schema.org','@type':'ProfilePage',url,name:`Liqpad creator ${short(address)}`,mainEntity:{'@type':'Person',name:short(address),identifier:address}};
+  return <><JsonLd data={structuredData}/><div className="mx-auto max-w-5xl px-4 py-12"><div className="flex items-center gap-4"><div className="grid h-20 w-20 place-items-center rounded-full bg-gradient-to-br from-magenta to-cyan text-2xl font-black">{address.slice(2,4).toUpperCase()}</div><div><p className="text-sm text-cyan">Creator</p><h1 className="font-mono text-xl md:text-3xl">{short(address)}</h1></div></div><div className="mt-8 grid gap-4 md:grid-cols-3"><div className="card p-5"><p className="text-sm text-muted">Tokens launched</p><p className="mt-2 text-3xl font-bold">{pageData.total}</p></div><div className="card p-5"><p className="text-sm text-muted">Combined market cap</p><p className="mt-2 text-2xl font-bold">{usd(combined)}</p></div><ClaimAll creator={address as Address} tokens={creatorTokens.map(item=>item.token as Address)}/></div><h2 className="mt-12 font-display text-2xl font-bold">Launches</h2><div className="mt-4 space-y-3">{pageData.items.length?pageData.items.map(item=><Link className="card flex items-center p-4" href={`/token/${item.token}`} key={item.token}><b>{item.name}</b><span className="ml-2 text-muted">{item.symbol}</span><span className="ml-auto text-cyan">LP locked →</span></Link>):<div className="card p-10 text-center text-muted">This address has not launched a token in the indexed window.</div>}</div><ServerPagination page={pageData.page} totalPages={pageData.totalPages} totalItems={pageData.total} pageSize={pageData.pageSize} basePath={`/creator/${address}`} label="launches"/></div></>;
 }
