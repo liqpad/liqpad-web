@@ -1,4 +1,3 @@
-import 'server-only';
 import {ADDRESSES} from '@/lib/constants';
 import {getVvvUsdPrice} from '@/lib/vvv-price';
 import type {AssetUsdPrices} from '@/lib/market';

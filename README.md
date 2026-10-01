@@ -28,6 +28,38 @@ The token detail page reads the latest 20 confirmed swaps from `GET /api/swaps?t
 
 After log sync, the same endpoint runs the market stage. It snapshots an index-time USD estimate for unpriced swaps, quotes every initialized B20/VVV pool, stores current price/market cap and periodic price snapshots, calculates 24-hour token activity, then refreshes the `liqpad-v1` aggregate row. The Discover strip reports production Factory launches, all-time indexed USD volume, unique payer wallets, and the current highest market cap. Missing FX remains null and is displayed as unavailable rather than zero. Apply the latest `supabase/schema.sql` before enabling this stage, and continue sync until `market.caughtUp` is also `true` without an `error` field.
 
+## Production indexer worker
+
+Production indexing is designed to run continuously on an Ubuntu 24.04 VPS. The worker reuses the same idempotent factory, protocol, swap, burn, and market stages as the authenticated Route Handler, but it does not depend on Vercel requests or cron execution.
+
+Apply `supabase/migrations/0001_indexer_worker_status.sql`, then copy `deploy/indexer.env.example` to `/etc/liqpad/indexer.env` and replace every placeholder. `INDEXER_RPC_URL` must be the server-only Alchemy Base Mainnet endpoint assigned to the indexer application. Never expose it with a `NEXT_PUBLIC_` prefix.
+
+On the VPS, place the repository at `/srv/liqpad-web`, install locked dependencies, and install the service:
+
+```bash
+cd /srv/liqpad-web
+corepack enable
+pnpm install --frozen-lockfile
+sudo install -d -m 700 /etc/liqpad
+sudo install -m 600 deploy/indexer.env.example /etc/liqpad/indexer.env
+# Edit /etc/liqpad/indexer.env before continuing.
+sudo install -m 644 deploy/liqpad-indexer.service /etc/systemd/system/liqpad-indexer.service
+sudo systemctl daemon-reload
+sudo systemctl enable --now liqpad-indexer
+sudo systemctl status liqpad-indexer
+sudo journalctl -u liqpad-indexer -f
+```
+
+The worker waits 12 confirmations by default, catches up in bounded block ranges, persists checkpoints only after successful writes, updates `indexer_workers` on every cycle, backs off after failures, and shuts down cleanly on `SIGTERM`. Market work runs on a separate cadence so price APIs and pool quotes are not called on every block poll. The existing `POST /api/indexer/sync` remains available as a protected diagnostic/manual fallback and now calls the same shared runner.
+
+After changing the service or environment file:
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl restart liqpad-indexer
+sudo journalctl -u liqpad-indexer -n 100 --no-pager
+```
+
 Discover queries `GET /api/tokens` in 24-item server-side pages, including database-backed search and sorting. Desktop uses numbered navigation and mobile uses compact previous/next controls. Latest swaps use a stable block/log cursor with “Load older swaps”; transparency tables render 20–25 rows per page, creator launches use 12-item URL pages, and `/me` reveals created tokens in batches of 12.
 
 ## Trading

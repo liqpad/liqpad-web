@@ -1,0 +1,25 @@
+[Unit]
+Description=Liqpad Base indexer
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=liqpad
+Group=liqpad
+WorkingDirectory=/srv/liqpad-web
+EnvironmentFile=/etc/liqpad/indexer.env
+Environment=PATH=/usr/local/bin:/usr/bin:/bin
+ExecStart=/usr/bin/env pnpm indexer:worker
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=30
+KillSignal=SIGTERM
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/srv/liqpad-web
+
+[Install]
+WantedBy=multi-user.target

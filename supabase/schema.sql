@@ -58,6 +58,15 @@ create table if not exists public.indexer_state (
   key text primary key, last_block numeric(78,0) not null default 0,
   updated_at timestamptz not null default now(), error text
 );
+create table if not exists public.indexer_workers (
+  id text primary key,
+  status text not null check (status in ('starting','running','degraded','stopping')),
+  last_heartbeat_at timestamptz not null default now(),
+  last_success_at timestamptz,
+  last_error text,
+  result jsonb,
+  updated_at timestamptz not null default now()
+);
 -- Deprecated rows are retained and explicitly classified as legacy.
 update public.tokens set is_legacy=true,launch_version='legacy' where lower(factory_address) <> lower('0x7e22764f1A1CBB8B60A5Ca1D3bAed720A48AA3D2');
 insert into public.indexer_state(key,last_block) values ('factory_launches:v1:0x7e22764f1a1cbb8b60a5ca1d3baed720a48aa3d2',51050148) on conflict (key) do nothing;
@@ -172,6 +181,7 @@ grant execute on function public.refresh_market_aggregates(text) to service_role
 alter table public.tokens enable row level security;
 alter table public.swaps enable row level security;
 alter table public.indexer_state enable row level security;
+alter table public.indexer_workers enable row level security;
 alter table public.protocol_events enable row level security;
 alter table public.protocol_metrics enable row level security;
 alter table public.token_price_snapshots enable row level security;
@@ -181,6 +191,8 @@ drop policy if exists "public read swaps" on public.swaps;
 create policy "public read swaps" on public.swaps for select using (true);
 drop policy if exists "public read indexer state" on public.indexer_state;
 create policy "public read indexer state" on public.indexer_state for select using (true);
+drop policy if exists "public read indexer workers" on public.indexer_workers;
+create policy "public read indexer workers" on public.indexer_workers for select using (true);
 drop policy if exists "public read protocol events" on public.protocol_events;
 create policy "public read protocol events" on public.protocol_events for select using (true);
 drop policy if exists "public read protocol metrics" on public.protocol_metrics;

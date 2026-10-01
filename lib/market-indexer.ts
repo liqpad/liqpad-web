@@ -1,4 +1,3 @@
-import 'server-only';
 import {formatUnits,getAddress,type Address} from 'viem';
 import {ADDRESSES,SUPPLY} from '@/lib/constants';
 import {burnedSupplyRaw} from '@/lib/burn';

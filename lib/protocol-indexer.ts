@@ -1,4 +1,3 @@
-import 'server-only';
 import {decodeEventLog,type Hex} from 'viem';
 import {publicClient} from '@/lib/data';
 import {ADDRESSES,FEE_ROUTER_START_BLOCK,PROTOCOL_INDEXER_KEY} from '@/lib/constants';

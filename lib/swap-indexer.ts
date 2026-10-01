@@ -1,4 +1,3 @@
-import 'server-only';
 import {getAddress,parseAbiItem,zeroAddress} from 'viem';
 import {ADDRESSES,FACTORY_START_BLOCK,SWAP_INDEXER_KEY} from '@/lib/constants';
 import {publicClient} from '@/lib/data';

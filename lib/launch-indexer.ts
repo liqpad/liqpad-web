@@ -1,4 +1,3 @@
-import 'server-only';
 import { getAddress, parseEventLogs, type Address, type Hex } from 'viem';
 import { publicClient } from '@/lib/data';
 import { ADDRESSES } from '@/lib/constants';
