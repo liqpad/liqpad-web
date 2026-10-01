@@ -36,6 +36,8 @@ export const ADDRESSES = {
   permit2: '0x000000000022D473030F116dDEE9F6B43aC78BA3', b20Factory: '0xB20f000000000000000000000000000000000000',
   v4Quoter: '0x0d5e0f971ed27fbff6c2837bf31316121532048d', aerodromeRouter: '0xcF77a3Ba9A5CA399B7c97c74d54e5b1Beb874E43',
   aerodromeFactory: '0x420DD381b31aEf6683db6B902084cB0FFECe40Da', weth: '0x4200000000000000000000000000000000000006', usdc: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
+  agentFeeSplitterFactory: configuredAddress('NEXT_PUBLIC_AGENT_FEE_SPLITTER_FACTORY_ADDRESS', process.env.NEXT_PUBLIC_AGENT_FEE_SPLITTER_FACTORY_ADDRESS||'0x632eed8756899fe56de4bac48a74847b029826ba'),
+  agentFeeSplitterImplementation: configuredAddress('NEXT_PUBLIC_AGENT_FEE_SPLITTER_IMPLEMENTATION_ADDRESS', process.env.NEXT_PUBLIC_AGENT_FEE_SPLITTER_IMPLEMENTATION_ADDRESS||'0x2954f34da1e0d9d861dd2e265b364fdd1dc00eed'),
 } as const satisfies Record<string, Address>;
 
 export const PROTOCOL_OPERATOR = configuredAddress('NEXT_PUBLIC_PROTOCOL_OPERATOR_ADDRESS', process.env.NEXT_PUBLIC_PROTOCOL_OPERATOR_ADDRESS||'0xca53938b27c29e50527dec1f2d6e488889435d8c');
@@ -43,6 +45,7 @@ export const PROTOCOL_OPERATOR = configuredAddress('NEXT_PUBLIC_PROTOCOL_OPERATO
 export const FACTORY_INDEXER_KEY = `factory_launches:v1:${ADDRESSES.factory.toLowerCase()}`;
 export const PROTOCOL_INDEXER_KEY = `protocol_events:v1:${ADDRESSES.feeRouter.toLowerCase()}`;
 export const SWAP_INDEXER_KEY = `swap_events:v1:${ADDRESSES.swapRouter.toLowerCase()}`;
+export const AGENT_FEE_INDEXER_KEY = `agent_fees:v1:${ADDRESSES.agentFeeSplitterFactory.toLowerCase()}`;
 export const SUPPLY = 1_000_000_000n;
 export const TOKEN_DECIMALS = 18;
 export const INITIAL_SUPPLY_RAW = SUPPLY * 10n ** BigInt(TOKEN_DECIMALS);

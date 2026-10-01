@@ -5,7 +5,7 @@ import { chain } from '@/lib/chain';
 import Image from 'next/image';
 import { MobileNav } from '@/components/mobile-nav';
 
-const nav = [['/', 'Discover'], ['/launch', 'Launch'], ['/transparency', 'Transparency'], ['/docs', 'Docs']];
+const nav = [['/', 'Discover'], ['/launch', 'Launch'], ['/agents', 'Agents'], ['/transparency', 'Transparency'], ['/docs', 'Docs']];
 export function Header() {
   const { address, chainId, isConnected } = useAccount();
   const { connectors, connect, isPending } = useConnect();

@@ -1,4 +1,5 @@
 allowBuilds:
+  '@reown/appkit': false
   bufferutil: true
   esbuild: true
   keccak: true
@@ -7,6 +8,7 @@ allowBuilds:
   utf-8-validate: true
 
 onlyBuiltDependencies:
+  - '@reown/appkit'
   - bufferutil
   - esbuild
   - keccak

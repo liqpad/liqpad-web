@@ -74,8 +74,20 @@ The token page validates `factory.isLiqpadLaunch(token)` before enabling the pro
 - LockedPositionVault: `0xAF8082B81Df88977B254342996cfe518F16477D6`
 - SwapRouter: `0xf5ea55a69307cf2cf598ccb0ea947ffdc52f985e`
 - VVV: `0xacfE6019Ed1A7Dc6f7B508C02d1b04ec88cC21bf`
+- AgentFeeSplitterFactory: `0x632eEd8756899Fe56De4bAC48A74847b029826BA`
+- AgentFeeSplitter implementation: `0x2954F34dA1E0D9d861dd2E265b364FDD1DC00eED`
 
 POTPAL (`0xB20000000000000000000010238055932234F173`) is the first live production fixture.
+
+## Agent launcher (beta)
+
+Apply `supabase/migrations/0002_agent_registry.sql`, then configure `NEXT_PUBLIC_PRIVY_APP_ID`, `NEXT_PUBLIC_PRIVY_CLIENT_ID`, `PRIVY_APP_SECRET`, and `PRIVY_VERIFICATION_KEY`. The public registration route creates a server-controlled Privy Ethereum wallet and stores its wallet ID only in the private `agent_wallet_bindings` table. Never expose `PRIVY_APP_SECRET` or the wallet binding table to the browser.
+
+`/agents/create` registers the identity and treasury. `/agents/[slug]/launch` then prepares one branded `0xb07` B20 and performs two explicit Base transactions: create the deterministic splitter, then launch the B20 with that splitter as `creator`. Final database activation occurs only after the server verifies both receipts, the Factory profile, token address, human recipient, and agent treasury on-chain.
+
+Agent deployment is creator-funded. Liqpad does not sponsor gas: the registered creator confirms and pays Base network gas for both the splitter creation and B20 launch transactions. The interface discloses this before registration and again before either transaction is submitted.
+
+Agent creator fees preserve the protocol's 30% allocation. The remaining 70% creator allocation is distributed as 30% of total fees to the human creator and 40% to the agent treasury. The VPS worker indexes splitter creation and distributions; set `AGENT_FEE_SPLITTER_START_BLOCK` to the verified factory deployment block before restarting it.
 
 ## Gate
 
