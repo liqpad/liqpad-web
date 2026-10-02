@@ -8,7 +8,9 @@ export function PrivyAgentProvider({children}:{children:React.ReactNode}){
   return <PrivyProvider appId={appId} config={{
     defaultChain:base,
     supportedChains:[base],
-    loginMethods:['email','wallet','google','twitter'],
+    // External wallets are connected once through wagmi/WalletConnect. Keeping
+    // them out of Privy login prevents a second WalletConnect Core instance.
+    loginMethods:['email','google','twitter'],
     appearance:{theme:'dark',accentColor:'#40e8ff',logo:'https://liqpad.com/logo.png'},
     embeddedWallets:{ethereum:{createOnLogin:'users-without-wallets'}},
   }}>{children}</PrivyProvider>;
