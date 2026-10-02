@@ -3,11 +3,12 @@ import {NextResponse} from 'next/server';
 import {getAddress} from 'viem';
 import {privateKeyToAccount} from 'viem/accounts';
 import {ADDRESSES,CHAIN_ID} from '@/lib/constants';
-import {publicClient} from '@/lib/data';
+import {serverPublicClient} from '@/lib/server-public-client';
 import {estimatedFdvUsd,frameForFdv,LAUNCH_QUOTE_TTL_SECONDS,validateQuoteInput} from '@/lib/launch-quote';
 import {factoryAbi} from '@/src/abi/factory';
 import {hasB07Suffix} from '@/lib/suffix';
 import {getVvvUsdPrice} from '@/lib/vvv-price';
+import {logSafeError} from '@/lib/safe-error';
 
 const requests=new Map<string,{at:number;count:number}>();
 function rateLimited(key:string){const now=Date.now();const entry=requests.get(key);if(!entry||now-entry.at>60_000){requests.set(key,{at:now,count:1});return false}entry.count++;return entry.count>10}
@@ -22,16 +23,16 @@ export async function POST(request:Request){
     const vvvPrice=await getVvvUsdPrice(ADDRESSES.vvv);
     const vvvUsd=vvvPrice.price;const priceTimestamp=vvvPrice.timestamp;
     const account=privateKeyToAccount(privateKey as `0x${string}`);
-    const onchainSigner=await publicClient.readContract({address:ADDRESSES.factory,abi:factoryAbi,functionName:'quoteSigner'});
+    const onchainSigner=await serverPublicClient.readContract({address:ADDRESSES.factory,abi:factoryAbi,functionName:'quoteSigner'});
     if(getAddress(onchainSigner)!==getAddress(account.address))throw new Error('Configured signer does not match Factory quoteSigner.');
-    const predictedToken=await publicClient.readContract({address:ADDRESSES.factory,abi:factoryAbi,functionName:'predictAddress',args:[input.launchSalt]});
+    const predictedToken=await serverPublicClient.readContract({address:ADDRESSES.factory,abi:factoryAbi,functionName:'predictAddress',args:[input.launchSalt]});
     if(!hasB07Suffix(predictedToken))throw new Error('Launch salt must predict a branded 0xb07 token address.');
-    const alreadyLaunched=await publicClient.readContract({address:ADDRESSES.factory,abi:factoryAbi,functionName:'isLiqpadLaunch',args:[predictedToken]});
+    const alreadyLaunched=await serverPublicClient.readContract({address:ADDRESSES.factory,abi:factoryAbi,functionName:'isLiqpadLaunch',args:[predictedToken]});
     if(alreadyLaunched)throw new Error('Predicted token address is already in use. Generate a new salt.');
     const quotedFrame=frameForFdv(input.targetFdvUsd,vvvUsd);const validUntil=BigInt(Math.floor(Date.now()/1000)+LAUNCH_QUOTE_TTL_SECONDS);
-    const [poolTick,tickLower,tickUpper]=await publicClient.readContract({address:ADDRESSES.factory,abi:factoryAbi,functionName:'ticksFor',args:[predictedToken,quotedFrame]});
+    const [poolTick,tickLower,tickUpper]=await serverPublicClient.readContract({address:ADDRESSES.factory,abi:factoryAbi,functionName:'ticksFor',args:[predictedToken,quotedFrame]});
     const quote={quotedFrame,validUntil,creator:input.creator,launchSalt:input.launchSalt} as const;
     const signature=await account.signTypedData({domain:{name:'LiqpadFactory',version:'1',chainId:CHAIN_ID,verifyingContract:ADDRESSES.factory},types:{LaunchQuote:[{name:'quotedFrame',type:'int24'},{name:'validUntil',type:'uint64'},{name:'creator',type:'address'},{name:'launchSalt',type:'bytes32'}]},primaryType:'LaunchQuote',message:quote});
     return NextResponse.json({quote:{...quote,validUntil:validUntil.toString()},signature,predictedToken,poolTick,tickLower,tickUpper,estimatedOpeningFDV:estimatedFdvUsd(quotedFrame,vvvUsd),vvvUsd,priceTimestamp,priceSource:vvvPrice.source});
-  }catch(error){return NextResponse.json({error:error instanceof Error?error.message:'Unable to create launch quote.'},{status:422})}
+  }catch(error){logSafeError('Launch quote failed',error);return NextResponse.json({error:'Unable to prepare the launch quote. Please try again.'},{status:422})}
 }

@@ -7,7 +7,7 @@ export function privyServer(){
   const appId=process.env.NEXT_PUBLIC_PRIVY_APP_ID;
   const appSecret=process.env.PRIVY_APP_SECRET;
   if(!appId||!appSecret)throw new Error('Privy server credentials are not configured.');
-  return client??=new PrivyClient({appId,appSecret,jwtVerificationKey:process.env.PRIVY_VERIFICATION_KEY||undefined});
+  return client??=new PrivyClient({appId,appSecret});
 }
 
 export async function requirePrivyUser(req:Request){

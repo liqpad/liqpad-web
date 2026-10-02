@@ -49,6 +49,6 @@ export function useAutoMineB07(){
       setStatus('verified');throw new Error(`Base RPC verification failed. Your 0xb07 address has been kept; please try again. ${reason instanceof Error?reason.message:''}`.trim());
     }
   },[client,setResult,start]);
-  useEffect(()=>{start();return stop},[start,stop]);
+  useEffect(()=>{const timer=window.setTimeout(start,0);return()=>{window.clearTimeout(timer);stop()}},[start,stop]);
   return {status,result,attempts,rate,error,restart:start,verify};
 }

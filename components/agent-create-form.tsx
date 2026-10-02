@@ -1,9 +1,11 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { usePrivy } from "@privy-io/react-auth";
 import { useAccount } from "wagmi";
+import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { ImageUpload } from "@/components/image-upload";
+import { AgentProcessOverlay } from "@/components/agent-process-overlay";
 import { normalizeAgentSlug } from "@/lib/agents";
 
 type Form = {
@@ -34,10 +36,17 @@ const blank: Form = {
 export function AgentCreateForm() {
   const [form, setForm] = useState(blank);
   const [busy, setBusy] = useState(false);
+  const [phase, setPhase] = useState<'registering'|'redirecting'>('registering');
   const [error, setError] = useState("");
   const { ready, authenticated, login, getAccessToken } = usePrivy();
   const { address, isConnected } = useAccount();
   const router = useRouter();
+  useEffect(()=>{
+    if(!busy)return;
+    const guard=(event:BeforeUnloadEvent)=>event.preventDefault();
+    window.addEventListener('beforeunload',guard);
+    return()=>window.removeEventListener('beforeunload',guard);
+  },[busy]);
   const update = (key: keyof Form, value: string) =>
     setForm((current) => ({
       ...current,
@@ -66,14 +75,16 @@ export function AgentCreateForm() {
     );
   };
   async function create() {
+    if (!isConnected || !address) {
+      setError("Connect the external wallet that will receive the creator share.");
+      return;
+    }
     if (!authenticated) {
       login();
       return;
     }
-    if (!address)
-      return setError(
-        "Connect the wallet that will receive the human creator share.",
-      );
+    let navigating=false;
+    setPhase('registering');
     setBusy(true);
     setError("");
     try {
@@ -90,13 +101,15 @@ export function AgentCreateForm() {
       const result = await response.json();
       if (!response.ok)
         throw new Error(result.error || "Agent creation failed.");
+      setPhase('redirecting');
+      navigating=true;
       router.push(`/agents/${result.agent.slug}/launch`);
     } catch (cause) {
       setError(
         cause instanceof Error ? cause.message : "Agent creation failed.",
       );
     } finally {
-      setBusy(false);
+      if(!navigating)setBusy(false);
     }
   }
   const complete =
@@ -106,10 +119,12 @@ export function AgentCreateForm() {
     form.description.trim().length >= 10 &&
     form.mission.trim().length >= 10 &&
     form.personality.trim().length >= 10;
-  return (
+  return (<>
     <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
+      <div className="space-y-4">
+      {!isConnected&&<div className="card border-cyan/20 bg-cyan/[.04] p-5"><div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"><div><p className="font-black text-white">Connect the creator wallet first</p><p className="mt-1 text-sm leading-6 text-muted">This wallet pays Base gas and receives the human creator&apos;s 30% fee share. The identity form unlocks after connection.</p></div><div className="shrink-0"><ConnectButton chainStatus="icon" showBalance={false}/></div></div></div>}
       <fieldset
-        disabled={busy}
+        disabled={busy || !isConnected}
         className="card space-y-6 p-5 disabled:opacity-60 md:p-8"
       >
         <div>
@@ -179,12 +194,13 @@ export function AgentCreateForm() {
           {busy
             ? "Creating secure agent wallet…"
             : !authenticated
-              ? "Sign in with Privy"
+              ? "Continue securely"
               : !isConnected
                 ? "Connect creator wallet first"
                 : "Create agent wallet"}
         </button>
       </fieldset>
+      </div>
       <aside className="card sticky top-24 overflow-hidden p-5">
         <p className="text-xs font-bold uppercase tracking-[.18em] text-cyan">
           Fee ownership
@@ -220,5 +236,6 @@ export function AgentCreateForm() {
         </p>
       </aside>
     </div>
+    {busy&&<AgentProcessOverlay phase={phase}/>}</>
   );
 }

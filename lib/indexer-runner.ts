@@ -4,9 +4,10 @@ import {syncProtocolEvents} from '@/lib/protocol-indexer';
 import {syncSwapEvents} from '@/lib/swap-indexer';
 import {syncMarketMetrics} from '@/lib/market-indexer';
 import {syncAgentFeeEvents} from '@/lib/agent-fee-indexer';
+import {safeErrorMessage} from '@/lib/safe-error';
 
 type Failure={error:string};
-const safe=async<T>(job:Promise<T>):Promise<T|Failure>=>job.catch(error=>({error:error instanceof Error?error.message:'Indexer failed.'}));
+const safe=async<T>(job:Promise<T>):Promise<T|Failure>=>job.catch(error=>({error:safeErrorMessage(error)}));
 const isFailure=(value:unknown):value is Failure=>Boolean(value&&typeof value==='object'&&'error' in value);
 
 export async function runIndexerCycle({includeMarket=true}:{includeMarket?:boolean}={}){

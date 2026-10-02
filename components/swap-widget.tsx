@@ -1,5 +1,5 @@
 'use client';
-import {useEffect,useMemo,useRef,useState} from 'react';
+import {useEffect,useMemo,useRef,useState,useSyncExternalStore} from 'react';
 import {useQuery,useQueryClient} from '@tanstack/react-query';
 import {formatUnits,type Address} from 'viem';
 import {useAccount,useBalance,useChainId,usePublicClient,useReadContract,useSwitchChain,useWaitForTransactionReceipt,useWriteContract} from 'wagmi';
@@ -10,7 +10,7 @@ import {useSwapQuote} from '@/hooks/useSwapQuote';import {erc20Abi} from '@/src/
 const ETH_GAS_RESERVE=100_000_000_000_000n;
 export function SwapWidget({token,symbol}:{token:Address;symbol:string}){
   const queryClient=useQueryClient();
-  const [hydrated,setHydrated]=useState(false);const [side,setSide]=useState<SwapSide>('buy');const [asset,setAsset]=useState<RouteAsset>('ETH');const [input,setInput]=useState('');const [slippage,setSlippage]=useState(0.5);const [deadlineMinutes,setDeadlineMinutes]=useState(20);const [simulating,setSimulating]=useState(false);const [autoSwap,setAutoSwap]=useState(false);const [continueReady,setContinueReady]=useState(false);const [localError,setLocalError]=useState('');const handledApproval=useRef<string|undefined>(undefined);
+  const hydrated=useSyncExternalStore(()=>()=>{},()=>true,()=>false);const [side,setSide]=useState<SwapSide>('buy');const [asset,setAsset]=useState<RouteAsset>('ETH');const [input,setInput]=useState('');const [slippage,setSlippage]=useState(0.5);const [deadlineMinutes,setDeadlineMinutes]=useState(20);const [simulating,setSimulating]=useState(false);const [autoSwap,setAutoSwap]=useState(false);const [continueReady,setContinueReady]=useState(false);const [localError,setLocalError]=useState('');const handledApproval=useRef<string|undefined>(undefined);
   const {address,isConnected}=useAccount();const chainId=useChainId();const switchChain=useSwitchChain();const client=usePublicClient();
   const inputAsset=side==='buy'?asset:'VVV';const amountIn=useMemo(()=>parseAmount(input,inputAsset),[input,inputAsset]);const slippageBps=Math.max(1,Math.min(2000,Math.round(slippage*100)));
   const nativeBalance=useBalance({address,query:{enabled:!!address}});const usdcBalance=useReadContract({address:ADDRESSES.usdc,abi:erc20Abi,functionName:'balanceOf',args:[address!],query:{enabled:!!address}});const vvvBalance=useReadContract({address:ADDRESSES.vvv,abi:erc20Abi,functionName:'balanceOf',args:[address!],query:{enabled:!!address}});const b20Balance=useReadContract({address:token,abi:erc20Abi,functionName:'balanceOf',args:[address!],query:{enabled:!!address}});
@@ -22,7 +22,6 @@ export function SwapWidget({token,symbol}:{token:Address;symbol:string}){
   const balance=side==='sell'?(b20Balance.data||0n):asset==='ETH'?(nativeBalance.data?.value||0n):asset==='USDC'?(usdcBalance.data||0n):(vvvBalance.data||0n);const balanceDecimals=side==='buy'?assetDecimals(asset):18;
   const minimumOut=currentQuote?applySlippage(currentQuote.output,slippageBps):0n;const needsApproval=!!approvalToken&&amountIn>0n&&(allowance.data||0n)<amountIn;
   const approve=useWriteContract();const swap=useWriteContract();const approveReceipt=useWaitForTransactionReceipt({hash:approve.data,query:{enabled:!!approve.data}});const swapReceipt=useWaitForTransactionReceipt({hash:swap.data,query:{enabled:!!swap.data}});
-  useEffect(()=>setHydrated(true),[]);
   // The confirmed approval hash is the state-machine trigger; the ref guard prevents duplicate wallet requests.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(()=>{if(!approveReceipt.isSuccess||!approve.data||handledApproval.current===approve.data)return;handledApproval.current=approve.data;void(async()=>{setAutoSwap(true);setContinueReady(false);setLocalError('');await allowance.refetch();const fresh=await quote.refetch();approve.reset();if(!fresh.data||fresh.data.amountIn!==amountIn){setLocalError('Approval succeeded, but the refreshed quote is unavailable. Select Continue to swap.');setContinueReady(true);setAutoSwap(false);return}const sent=await send(fresh.data);setContinueReady(!sent);setAutoSwap(false)})()},[approve.data,approveReceipt.isSuccess]);

@@ -4,6 +4,7 @@ import {ADDRESSES,FACTORY_INDEXER_KEY,FACTORY_START_BLOCK} from '@/lib/constants
 import {upsertLaunchLog} from '@/lib/launch-indexer';
 import {supabaseAdmin} from '@/lib/supabase';
 import {boundedInteger} from '@/lib/indexer-config';
+import {safeErrorMessage} from '@/lib/safe-error';
 
 export async function syncFactoryLaunches(latestBlock?:bigint){
   const db=supabaseAdmin();if(!db)throw new Error('Supabase service role is not configured.');
@@ -38,7 +39,7 @@ export async function syncFactoryLaunches(latestBlock?:bigint){
     }
     return {synced,batches,lastBlock:last.toString(),latestBlock:tip.toString(),confirmedBlock:confirmed.toString(),caughtUp:last>=confirmed};
   }catch(error){
-    const message=error instanceof Error?error.message:'Factory indexer failed.';
+    const message=safeErrorMessage(error);
     await db.from('indexer_state').upsert({key:FACTORY_INDEXER_KEY,last_block:last.toString(),updated_at:new Date().toISOString(),error:message});
     throw error;
   }

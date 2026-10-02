@@ -1,13 +1,15 @@
 import {runIndexerCycle} from '@/lib/indexer-runner';
 import {boundedInteger,retryDelayMs,sleep} from '@/lib/indexer-config';
 import {supabaseAdmin} from '@/lib/supabase';
+import {runAgentAutomationCycle} from '@/lib/agent-automation';
 
 const workerId=process.env.INDEXER_WORKER_ID||'liqpad-indexer-primary';
 const pollMs=boundedInteger(process.env.INDEXER_POLL_INTERVAL_MS,12_000,1_000,300_000);
 const marketMs=boundedInteger(process.env.INDEXER_MARKET_INTERVAL_MS,60_000,10_000,3_600_000);
 const retryBaseMs=boundedInteger(process.env.INDEXER_RETRY_BASE_MS,2_000,500,60_000);
 const retryMaxMs=boundedInteger(process.env.INDEXER_RETRY_MAX_MS,60_000,retryBaseMs,600_000);
-let stopping=false,failures=0,lastMarketAt=0;
+let stopping=false,failures=0,lastMarketAt=0,lastAgentAutomationAt=0;
+const agentAutomationMs=boundedInteger(process.env.AGENT_AUTOMATION_INTERVAL_MS,60_000,15_000,3_600_000);
 
 async function heartbeat(status:'starting'|'running'|'degraded'|'stopping',result:unknown=null,error:string|null=null){
   const db=supabaseAdmin();if(!db)throw new Error('Supabase service role is not configured.');
@@ -26,8 +28,10 @@ async function main(){
     try{
       const now=Date.now(),includeMarket=now-lastMarketAt>=marketMs;
       const result=await runIndexerCycle({includeMarket});
+      let agentAutomation:unknown=null;
+      if(now-lastAgentAutomationAt>=agentAutomationMs){agentAutomation=await runAgentAutomationCycle();lastAgentAutomationAt=now;}
       if(includeMarket)lastMarketAt=now;
-      console.log(JSON.stringify({workerId,...result}));
+      console.log(JSON.stringify({workerId,...result,agentAutomation}));
       if(!result.healthy){
         failures++;
         const message=result.errors.join(' | '),delay=retryDelayMs(failures,retryBaseMs,retryMaxMs);

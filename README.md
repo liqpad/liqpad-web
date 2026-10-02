@@ -1,5 +1,11 @@
 # Liqpad Web
 
+## Autonomous agents
+
+Agent chat is holder-gated on Base: the caller signs a short-lived message, must hold at least 0.1% of the token's current supply, and is limited to 10 messages per UTC day. Prompts and responses are private service-role data. Inference requests use the agent's Privy embedded wallet with Venice x402.
+
+Apply `supabase/migrations/0003_agent_runtime.sql` before enabling agent chat. The VPS worker can claim at 1 VVV and rebalance the newly received agent share to 30% ETH for gas and 70% USDC for inference. Automation is fail-closed and disabled by default. Configure the `AGENT_*` and `VENICE_*` variables from `.env.example`, verify the Privy wallet policy permits only the splitter, VVV approval, and Aerodrome router calls, then set `AGENT_AUTOMATION_ENABLED=true` and restart `liqpad-indexer`.
+
 Next.js 15 App Router interface for **Liqpad Launcher v1** on Base mainnet. Canonical site: **https://liqpad.com**.
 
 ## Local setup
@@ -81,9 +87,19 @@ POTPAL (`0xB20000000000000000000010238055932234F173`) is the first live producti
 
 ## Agent launcher (beta)
 
-Apply `supabase/migrations/0002_agent_registry.sql`, then configure `NEXT_PUBLIC_PRIVY_APP_ID`, `NEXT_PUBLIC_PRIVY_CLIENT_ID`, `PRIVY_APP_SECRET`, and `PRIVY_VERIFICATION_KEY`. The public registration route creates a server-controlled Privy Ethereum wallet and stores its wallet ID only in the private `agent_wallet_bindings` table. Never expose `PRIVY_APP_SECRET` or the wallet binding table to the browser.
+Apply `supabase/migrations/0002_agent_registry.sql`, then configure `NEXT_PUBLIC_PRIVY_APP_ID` and the server-only `PRIVY_APP_SECRET`. The public registration route creates a server-controlled Privy Ethereum wallet and stores its wallet ID only in the private `agent_wallet_bindings` table. Never expose `PRIVY_APP_SECRET` or the wallet binding table to the browser. A separate Privy Client ID or verification-key environment variable is not required by this integration.
+
+### Privy production security
+
+Add `https://liqpad.com` to the Privy production app's allowed origins and enable verified-domain HttpOnly cookies in the Privy dashboard. Use a separate Privy app for localhost or temporary preview domains; do not leave development origins enabled on the production app.
+
+The app sends Privy's recommended CSP sources plus the sources required by Liqpad's WalletConnect, Supabase, GeckoTerminal, Dexscreener, token images, and vanity-mining worker. CSP begins in report-only mode. Review `/api/security/csp-report` warnings while testing authentication, wallet connection, launch, swap, chart, and image flows, then set `CSP_ENFORCE=true` in production and redeploy. Do not enforce it before those flows have been tested.
+
+Before agent wallets hold material value, configure Privy authorization-key ownership and wallet policies, keep signing keys in a KMS, enable MFA for sensitive access, disable SMS authentication, use separate production credentials, and monitor/rate-limit wallet operations.
 
 `/agents/create` registers the identity and treasury. `/agents/[slug]/launch` then prepares one branded `0xb07` B20 and performs two explicit Base transactions: create the deterministic splitter, then launch the B20 with that splitter as `creator`. Final database activation occurs only after the server verifies both receipts, the Factory profile, token address, human recipient, and agent treasury on-chain.
+
+The public launcher uses one compact Token/Agent selector at `/launch`; agent creation is intentionally not a separate global navigation item. Agent forms remain locked until an external creator wallet is connected, and blocking progress overlays prevent duplicate registration or transaction requests. Discovery resolves agent-token relationships from the registry: standard tokens link to `/token/[address]`, while agent tokens carry an Agent badge and link to `/agent/[slug]`.
 
 Agent deployment is creator-funded. Liqpad does not sponsor gas: the registered creator confirms and pays Base network gas for both the splitter creation and B20 launch transactions. The interface discloses this before registration and again before either transaction is submitted.
 

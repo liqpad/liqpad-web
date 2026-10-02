@@ -5,7 +5,7 @@ import {base} from 'viem/chains';
 export function PrivyAgentProvider({children}:{children:React.ReactNode}){
   const appId=process.env.NEXT_PUBLIC_PRIVY_APP_ID;
   if(!appId)return children;
-  return <PrivyProvider appId={appId} clientId={process.env.NEXT_PUBLIC_PRIVY_CLIENT_ID} config={{
+  return <PrivyProvider appId={appId} config={{
     defaultChain:base,
     supportedChains:[base],
     loginMethods:['email','wallet','google','twitter'],

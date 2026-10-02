@@ -11,6 +11,6 @@ export const metadata:Metadata=pageMetadata({title:'B20 Launchpad on Base',descr
 
 export default async function Home(){
   const [launchPage,metrics]=await Promise.all([getLaunchPage(),getProtocolMetrics()]);
-  const list={'@context':'https://schema.org','@type':'ItemList',name:'Latest Liqpad B20 launches',numberOfItems:launchPage.total,itemListElement:launchPage.items.slice(0,24).map((item,index)=>({'@type':'ListItem',position:index+1,url:`https://liqpad.com/token/${item.token}`,name:`${item.name} (${item.symbol})`}))};
+  const list={'@context':'https://schema.org','@type':'ItemList',name:'Latest Liqpad B20 launches',numberOfItems:launchPage.total,itemListElement:launchPage.items.slice(0,24).map((item,index)=>({'@type':'ListItem',position:index+1,url:item.agentSlug?`https://liqpad.com/agent/${item.agentSlug}`:`https://liqpad.com/token/${item.token}`,name:`${item.name} (${item.symbol})`}))};
   return <><JsonLd data={list}/><Discover initialPage={launchPage} metrics={metrics.updatedAt?metrics:{...metrics,totalLaunches:launchPage.total}}/></>;
 }

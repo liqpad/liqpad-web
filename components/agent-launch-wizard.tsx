@@ -22,6 +22,7 @@ import type { PublicAgent } from "@/lib/agents";
 import type { SignedLaunchQuote } from "@/lib/launch-quote";
 import { factoryAbi } from "@/src/abi/factory";
 import { agentFeeSplitterFactoryAbi } from "@/src/abi/agentFeeSplitter";
+import { AgentProcessOverlay } from "@/components/agent-process-overlay";
 
 export function AgentLaunchWizard({ agent }: { agent: PublicAgent }) {
   const miner = useAutoMineB07();
@@ -36,6 +37,7 @@ export function AgentLaunchWizard({ agent }: { agent: PublicAgent }) {
   const [contractURI, setContractURI] = useState("");
   const [quote, setQuote] = useState<SignedLaunchQuote>();
   const [busy, setBusy] = useState(false);
+  const [finalizing, setFinalizing] = useState(false);
   const [error, setError] = useState("");
   const saved = useRef(false);
   const splitWrite = useWriteContract();
@@ -50,6 +52,9 @@ export function AgentLaunchWizard({ agent }: { agent: PublicAgent }) {
     confirmations: 1,
     query: { enabled: !!launchWrite.data },
   });
+  useEffect(()=>{
+    if(launchWrite.data)window.localStorage.setItem(`liqpad:agent-launch:${agent.slug}`,launchWrite.data);
+  },[agent.slug,launchWrite.data]);
   const splitArgs = useMemo(
     () =>
       [
@@ -183,6 +188,7 @@ export function AgentLaunchWizard({ agent }: { agent: PublicAgent }) {
     )
       return;
     saved.current = true;
+    setFinalizing(true);
     try {
       const confirm = await fetch("/api/launch/confirm", {
         method: "POST",
@@ -209,9 +215,11 @@ export function AgentLaunchWizard({ agent }: { agent: PublicAgent }) {
       const result = await update.json();
       if (!update.ok)
         throw new Error(result.error || "Agent launch confirmation failed.");
-      router.push(`/token/${token}`);
+      window.localStorage.removeItem(`liqpad:agent-launch:${agent.slug}`);
+      router.push(`/agent/${agent.slug}`);
     } catch (cause) {
       saved.current = false;
+      setFinalizing(false);
       setError(cause instanceof Error ? cause.message : "Confirmation failed.");
     }
   }, [
@@ -224,7 +232,9 @@ export function AgentLaunchWizard({ agent }: { agent: PublicAgent }) {
     token,
   ]);
   useEffect(() => {
-    if (launchReceipt.isSuccess) void save();
+    if (!launchReceipt.isSuccess) return;
+    const timer = window.setTimeout(() => void save(), 0);
+    return () => window.clearTimeout(timer);
   }, [launchReceipt.isSuccess, save]);
   const stage = !quote
     ? "prepare"
@@ -233,8 +243,15 @@ export function AgentLaunchWizard({ agent }: { agent: PublicAgent }) {
       : !launchReceipt.isSuccess
         ? "token"
         : "saving";
+  const processPhase=busy?'preparing':splitWrite.isPending?'splitter-wallet':splitReceipt.isLoading?'splitter-confirming':launchWrite.isPending?'token-wallet':launchReceipt.isLoading?'token-confirming':finalizing?'saving':undefined;
+  useEffect(()=>{
+    if(!processPhase)return;
+    const guard=(event:BeforeUnloadEvent)=>event.preventDefault();
+    window.addEventListener('beforeunload',guard);
+    return()=>window.removeEventListener('beforeunload',guard);
+  },[processPhase]);
   return (
-    <div className="card p-5 md:p-8">
+    <><div className="card p-5 md:p-8">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="text-xs font-bold uppercase tracking-[.18em] text-cyan">
@@ -358,9 +375,7 @@ export function AgentLaunchWizard({ agent }: { agent: PublicAgent }) {
           </>
         )}
         {stage === "saving" && (
-          <p className="sm:col-span-2 text-center text-cyan">
-            Saving the verified launch to Liqpad…
-          </p>
+          error&&!finalizing?<button type="button" onClick={()=>void save()} className="btn btn-primary sm:col-span-2">Retry launch finalization</button>:<p className="sm:col-span-2 text-center text-cyan">Saving the verified launch to Liqpad…</p>
         )}
       </div>
       {(splitSim.error || launchSim.error) && (
@@ -368,6 +383,6 @@ export function AgentLaunchWizard({ agent }: { agent: PublicAgent }) {
           Simulation: {(splitSim.error || launchSim.error)?.message}
         </p>
       )}
-    </div>
+    </div>{processPhase&&<AgentProcessOverlay phase={processPhase}/>}</>
   );
 }

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { isAddress, isHash, type Address, type Hex } from 'viem';
 import { confirmLaunchTransaction } from '@/lib/launch-indexer';
+import {isPendingReceiptError,logSafeError} from '@/lib/safe-error';
 
 export async function POST(request: Request) {
   let hash: unknown; let expectedToken:unknown;
@@ -18,8 +19,8 @@ export async function POST(request: Request) {
     const token = await confirmLaunchTransaction(hash as Hex,expectedToken as Address|undefined);
     return NextResponse.json({ indexed:true, token:token.address });
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Launch confirmation failed.';
-    const pending = /not found|could not be found/i.test(message);
-    return NextResponse.json({ error:pending ? 'Transaction receipt is not available yet.' : message }, { status:pending ? 409 : 422 });
+    const pending = isPendingReceiptError(error);
+    logSafeError('Launch confirmation failed',error);
+    return NextResponse.json({ error:pending ? 'Transaction receipt is not available yet.' : 'On-chain launch verification is temporarily unavailable. Please try again.' }, { status:pending ? 409 : 422 });
   }
 }

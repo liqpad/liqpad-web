@@ -4,6 +4,11 @@ export const erc20Abi=[
   {type:'function',name:'approve',stateMutability:'nonpayable',inputs:[{name:'spender',type:'address'},{name:'amount',type:'uint256'}],outputs:[{type:'bool'}]},
 ] as const;
 
-export const aerodromeRouterAbi=[{type:'function',name:'getAmountsOut',stateMutability:'view',inputs:[{name:'amountIn',type:'uint256'},{name:'routes',type:'tuple[]',components:[{name:'from',type:'address'},{name:'to',type:'address'},{name:'stable',type:'bool'},{name:'factory',type:'address'}]}],outputs:[{name:'amounts',type:'uint256[]'}]}] as const;
+const routeComponents=[{name:'from',type:'address'},{name:'to',type:'address'},{name:'stable',type:'bool'},{name:'factory',type:'address'}] as const;
+export const aerodromeRouterAbi=[
+  {type:'function',name:'getAmountsOut',stateMutability:'view',inputs:[{name:'amountIn',type:'uint256'},{name:'routes',type:'tuple[]',components:routeComponents}],outputs:[{name:'amounts',type:'uint256[]'}]},
+  {type:'function',name:'swapExactTokensForTokens',stateMutability:'nonpayable',inputs:[{name:'amountIn',type:'uint256'},{name:'amountOutMin',type:'uint256'},{name:'routes',type:'tuple[]',components:routeComponents},{name:'to',type:'address'},{name:'deadline',type:'uint256'}],outputs:[{name:'amounts',type:'uint256[]'}]},
+  {type:'function',name:'swapExactTokensForETH',stateMutability:'nonpayable',inputs:[{name:'amountIn',type:'uint256'},{name:'amountOutMin',type:'uint256'},{name:'routes',type:'tuple[]',components:routeComponents},{name:'to',type:'address'},{name:'deadline',type:'uint256'}],outputs:[{name:'amounts',type:'uint256[]'}]},
+] as const;
 
 export const v4QuoterAbi=[{type:'function',name:'quoteExactInputSingle',stateMutability:'nonpayable',inputs:[{name:'params',type:'tuple',components:[{name:'poolKey',type:'tuple',components:[{name:'currency0',type:'address'},{name:'currency1',type:'address'},{name:'fee',type:'uint24'},{name:'tickSpacing',type:'int24'},{name:'hooks',type:'address'}]},{name:'zeroForOne',type:'bool'},{name:'exactAmount',type:'uint128'},{name:'hookData',type:'bytes'}]}],outputs:[{name:'amountOut',type:'uint256'},{name:'gasEstimate',type:'uint256'}]}] as const;

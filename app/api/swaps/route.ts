@@ -2,6 +2,7 @@ import {NextResponse} from 'next/server';
 import {getAddress,isAddress} from 'viem';
 import {ADDRESSES,SWAP_INDEXER_KEY} from '@/lib/constants';
 import {supabaseAdmin,supabaseBrowser} from '@/lib/supabase';
+import {safeErrorMessage} from '@/lib/safe-error';
 
 export const dynamic='force-dynamic';
 export async function GET(request:Request){
@@ -12,5 +13,6 @@ export async function GET(request:Request){
   const [swaps,state]=await Promise.all([query.order('block_number',{ascending:false}).order('log_index',{ascending:false}).limit(21),db.from('indexer_state').select('last_block,updated_at,error').eq('key',SWAP_INDEXER_KEY).maybeSingle()]);
   if(swaps.error)return NextResponse.json({error:swaps.error.message},{status:500});
   const rows=swaps.data||[],hasMore=rows.length>20,visible=rows.slice(0,20),last=visible.at(-1);const nextCursor=hasMore&&last?`${last.block_number}:${last.log_index}`:null;
-  return NextResponse.json({rows:visible,nextCursor,hasMore,indexedBlock:state.data?.last_block?String(state.data.last_block):null,indexedAt:state.data?.updated_at||null,warning:state.error?.message||state.data?.error||null,router:ADDRESSES.swapRouter},{headers:{'Cache-Control':'public, s-maxage=15, stale-while-revalidate=60'}});
+  const storedWarning=state.error?.message||state.data?.error||null;
+  return NextResponse.json({rows:visible,nextCursor,hasMore,indexedBlock:state.data?.last_block?String(state.data.last_block):null,indexedAt:state.data?.updated_at||null,warning:storedWarning?safeErrorMessage(storedWarning):null,router:ADDRESSES.swapRouter},{headers:{'Cache-Control':'public, s-maxage=15, stale-while-revalidate=60'}});
 }

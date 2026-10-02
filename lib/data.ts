@@ -1,17 +1,29 @@
 import { createPublicClient, fallback, http, parseAbiItem, parseUnits, type Address } from 'viem';
-import { chain, rpcUrl, serverRpcUrl } from './chain';
+import { absoluteRpcUrls, chain, serverRpcUrl } from './chain';
 import { ADDRESSES, FACTORY_START_BLOCK } from './constants';
 import { factoryAbi } from '@/src/abi/factory';
 import { hasSupabase, supabaseBrowser } from './supabase';
 
-export type Launch = { token:Address; creator:Address; poolId:`0x${string}`; profileHash:`0x${string}`; blockNumber:bigint; blockTimestamp?:string; name:string; symbol:string; image:string; description:string; website:string; twitter:string; telegram:string; farcaster:string; discord:string; contractURI:string; quoteFrame?:number; legacy?:boolean;priceVvv?:number|null;priceUsd?:number|null;marketCapUsd?:number|null;volume24hUsd?:number|null;change24h?:number|null;traders24h?:number|null;tx24h?:number|null;burnedB20?:string|null };
+export type Launch = { token:Address; creator:Address; poolId:`0x${string}`; profileHash:`0x${string}`; blockNumber:bigint; blockTimestamp?:string; name:string; symbol:string; image:string; description:string; website:string; twitter:string; telegram:string; farcaster:string; discord:string; contractURI:string; quoteFrame?:number; legacy?:boolean;priceVvv?:number|null;priceUsd?:number|null;marketCapUsd?:number|null;volume24hUsd?:number|null;change24h?:number|null;traders24h?:number|null;tx24h?:number|null;burnedB20?:string|null;agentSlug?:string|null };
 export type LaunchPage={items:Launch[];page:number;pageSize:number;total:number;totalPages:number};
 type LaunchRow={address:string;creator:string;pool_id:string;profile_hash:string;block_number:string|number;block_timestamp?:string|null;name:string;symbol:string;image:string;description:string;website:string;twitter:string;telegram:string;farcaster:string;discord:string;contract_uri:string;quote_frame?:number|null;is_legacy?:boolean|null;price_vvv?:string|number|null;price_usd?:string|number|null;market_cap_usd?:string|number|null;volume_24h_usd?:string|number|null;change_24h?:string|number|null;traders_24h?:string|number|null;tx_24h?:string|number|null;burned_b20?:string|number|null};
 export const launchFromRow=(r:LaunchRow):Launch=>({token:r.address as Address,creator:r.creator as Address,poolId:r.pool_id as `0x${string}`,profileHash:r.profile_hash as `0x${string}`,blockNumber:BigInt(r.block_number),blockTimestamp:r.block_timestamp||undefined,name:r.name,symbol:r.symbol,image:r.image,description:r.description,website:r.website,twitter:r.twitter,telegram:r.telegram,farcaster:r.farcaster,discord:r.discord,contractURI:r.contract_uri,quoteFrame:r.quote_frame??undefined,legacy:!!r.is_legacy,priceVvv:r.price_vvv==null?null:Number(r.price_vvv),priceUsd:r.price_usd==null?null:Number(r.price_usd),marketCapUsd:r.market_cap_usd==null?null:Number(r.market_cap_usd),volume24hUsd:r.volume_24h_usd==null?null:Number(r.volume_24h_usd),change24h:r.change_24h==null?null:Number(r.change_24h),traders24h:r.traders_24h==null?null:Number(r.traders_24h),tx24h:r.tx_24h==null?null:Number(r.tx_24h),burnedB20:r.burned_b20==null?null:parseUnits(String(r.burned_b20),18).toString()});
-const rpcTransports=[serverRpcUrl,rpcUrl]
-  .filter((url,index,urls):url is string=>Boolean(url)&&urls.indexOf(url)===index)
+// This client is imported by Route Handlers and the VPS worker. A browser-only
+// relative URL such as /api/rpc is invalid in Node and must never be a fallback.
+const rpcTransports=absoluteRpcUrls(serverRpcUrl)
   .map(url=>http(url,{retryCount:2,retryDelay:250,timeout:10_000}));
 export const publicClient = createPublicClient({chain,transport:rpcTransports.length>1?fallback(rpcTransports):rpcTransports[0]||http()});
+
+async function attachAgentIdentity(items:Launch[]):Promise<Launch[]>{
+  if(!items.length||!hasSupabase)return items;
+  try{
+    const db=supabaseBrowser();if(!db)return items;
+    const {data,error}=await db.from('agents').select('token_address,slug').not('token_address','is',null).neq('status','draft').limit(2_000);
+    if(error||!data)return items;
+    const agents=new Map(data.filter(row=>row.token_address&&row.slug).map(row=>[String(row.token_address).toLowerCase(),String(row.slug)]));
+    return items.map(item=>({...item,agentSlug:agents.get(item.token.toLowerCase())||null}));
+  }catch{return items}
+}
 
 export async function getOnchainLaunches(): Promise<Launch[]> {
   try {
@@ -25,10 +37,10 @@ export async function getLaunches(): Promise<Launch[]> {
   if (hasSupabase) {
     try {
       const db=supabaseBrowser(); const {data,error}=await db!.from('tokens').select('*').eq('factory_address',ADDRESSES.factory.toLowerCase()).order('block_number',{ascending:false}).limit(500);
-      if (!error && data?.length) return data.map(launchFromRow);
+      if (!error && data?.length) return attachAgentIdentity(data.map(launchFromRow));
     } catch { /* on-chain fallback below */ }
   }
-  return getOnchainLaunches();
+  return attachAgentIdentity(await getOnchainLaunches());
 }
 
 export async function getLaunchByAddress(address:string):Promise<Launch|null>{
@@ -36,7 +48,7 @@ export async function getLaunchByAddress(address:string):Promise<Launch|null>{
     try{
       const db=supabaseBrowser();
       const {data,error}=await db!.from('tokens').select('*').eq('factory_address',ADDRESSES.factory.toLowerCase()).ilike('address',address).maybeSingle();
-      if(!error&&data)return launchFromRow(data);
+      if(!error&&data)return (await attachAgentIdentity([launchFromRow(data)]))[0];
     }catch{/* on-chain fallback below */}
   }
   const launches=await getOnchainLaunches();
@@ -49,9 +61,9 @@ export async function getLaunchPage({page=1,pageSize=24,q='',sort='new',creator}
     let query=db.from('tokens').select('*',{count:'exact'}).eq('factory_address',ADDRESSES.factory.toLowerCase()).eq('is_legacy',false);
     if(creator)query=query.ilike('creator',creator);const term=q.trim().replace(/[%(),]/g,'').slice(0,80);if(term)query=query.or(`name.ilike.%${term}%,symbol.ilike.%${term}%,address.ilike.%${term}%`);
     const columns:Record<string,string>={volume:'volume_24h_usd',mc:'market_cap_usd',change:'change_24h',traders:'traders_24h',new:'block_number'};query=query.order(columns[sort]||'block_number',{ascending:false,nullsFirst:false});
-    const from=(safePage-1)*safeSize;const {data,error,count}=await query.range(from,from+safeSize-1);if(!error){const total=count||0;return {items:(data||[]).map(launchFromRow),page:safePage,pageSize:safeSize,total,totalPages:Math.max(1,Math.ceil(total/safeSize))}}
+    const from=(safePage-1)*safeSize;const {data,error,count}=await query.range(from,from+safeSize-1);if(!error){const total=count||0;return {items:await attachAgentIdentity((data||[]).map(launchFromRow)),page:safePage,pageSize:safeSize,total,totalPages:Math.max(1,Math.ceil(total/safeSize))}}
   }
-  let all=await getOnchainLaunches();if(creator)all=all.filter(item=>item.creator.toLowerCase()===creator.toLowerCase());if(q)all=all.filter(item=>`${item.name} ${item.symbol} ${item.token}`.toLowerCase().includes(q.toLowerCase()));const total=all.length,from=(safePage-1)*safeSize;return {items:all.slice(from,from+safeSize),page:safePage,pageSize:safeSize,total,totalPages:Math.max(1,Math.ceil(total/safeSize))};
+  let all=await getOnchainLaunches();if(creator)all=all.filter(item=>item.creator.toLowerCase()===creator.toLowerCase());if(q)all=all.filter(item=>`${item.name} ${item.symbol} ${item.token}`.toLowerCase().includes(q.toLowerCase()));const total=all.length,from=(safePage-1)*safeSize;return {items:await attachAgentIdentity(all.slice(from,from+safeSize)),page:safePage,pageSize:safeSize,total,totalPages:Math.max(1,Math.ceil(total/safeSize))};
 }
 
 export {short} from './utils';
