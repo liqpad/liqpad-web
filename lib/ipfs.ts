@@ -27,5 +27,9 @@ export function toBrowserImageUrl(value:string):string{
   const uri=toIpfsUri(value);
   if(!uri.startsWith('ipfs://'))return value.trim();
   const path=uri.slice('ipfs://'.length).replace(/^\/+/, '');
+  const parts=path.split('/');
+  // CIDv0/CIDv1 strings never contain whitespace, percent escapes, query data,
+  // or prose. Reject corrupted legacy metadata before the browser requests it.
+  if(!/^(?:Qm[1-9A-HJ-NP-Za-km-z]{44}|b[a-z2-7]{20,120})$/.test(parts[0]||'')||parts.some(part=>!/^[a-zA-Z0-9._~-]{1,180}$/.test(part)))return'';
   return `/api/ipfs/${path.split('/').map(encodeURIComponent).join('/')}`;
 }

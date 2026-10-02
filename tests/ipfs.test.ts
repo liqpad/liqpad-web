@@ -20,7 +20,13 @@ describe('IPFS URI normalization', () => {
   });
 
   it('routes IPFS browser images through the same-origin proxy',()=>{
-    assert.equal(toBrowserImageUrl('https://gateway.pinata.cloud/ipfs/bafy-test/logo.png'),'/api/ipfs/bafy-test/logo.png');
+    const cid='bafybeigdyrzt5sfp7udm7hu76uh7y26nf3obyw6n5puxz4x4hl4omq';
+    assert.equal(toBrowserImageUrl(`https://gateway.pinata.cloud/ipfs/${cid}/logo.png`),`/api/ipfs/${cid}/logo.png`);
     assert.equal(toBrowserImageUrl('https://liqpad.com/icon.png'),'https://liqpad.com/icon.png');
+  });
+
+  it('rejects IPFS paths contaminated with profile prose',()=>{
+    assert.equal(toBrowserImageUrl('ipfs://bafybeidzok6ga62575epm2omqm36rdry2nwulbe2soqummjnimcskzmvambase is my home'),'');
+    assert.equal(toBrowserImageUrl('ipfs://bafy%20broken/logo.png'),'');
   });
 });
