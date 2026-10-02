@@ -5,6 +5,10 @@ export const AGENT_TREASURY_FEE_BPS=4_000;
 export const AGENT_PROTOCOL_FEE_BPS=3_000;
 
 export type AgentStatus='draft'|'wallet_ready'|'splitter_ready'|'launch_pending'|'active'|'failed';
+
+export function hasLaunchedAgentEconomy(status:AgentStatus|string,tokenAddress:string|null|undefined){
+  return status!=='draft'&&Boolean(tokenAddress);
+}
 export type AgentVitality='unlaunched'|'active'|'conserving'|'low_compute'|'dormant';
 
 export type PublicAgent={
