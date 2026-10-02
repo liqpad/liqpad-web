@@ -22,3 +22,10 @@ export function toGatewayUrl(value: string, gateway = process.env.NEXT_PUBLIC_PI
   if (!trimmed.startsWith('ipfs://')) return trimmed;
   return `${gateway.replace(/\/$/, '')}/${trimmed.slice('ipfs://'.length).replace(/^\/+/, '')}`;
 }
+
+export function toBrowserImageUrl(value:string):string{
+  const uri=toIpfsUri(value);
+  if(!uri.startsWith('ipfs://'))return value.trim();
+  const path=uri.slice('ipfs://'.length).replace(/^\/+/, '');
+  return `/api/ipfs/${path.split('/').map(encodeURIComponent).join('/')}`;
+}

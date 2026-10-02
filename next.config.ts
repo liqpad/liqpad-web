@@ -55,9 +55,9 @@ const contentSecurityPolicy = [
   "worker-src 'self' blob:",
   "manifest-src 'self'",
   "media-src 'self' blob: https:",
-  'upgrade-insecure-requests',
+  process.env.CSP_ENFORCE === 'true' ? 'upgrade-insecure-requests' : '',
   'report-uri /api/security/csp-report',
-].join('; ');
+].filter(Boolean).join('; ');
 
 const securityHeaders = [
   {

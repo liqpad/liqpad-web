@@ -13,5 +13,6 @@ export function PrivyAgentProvider({children}:{children:React.ReactNode}){
     loginMethods:['email','google','twitter'],
     appearance:{theme:'dark',accentColor:'#40e8ff',logo:'https://liqpad.com/logo.png'},
     embeddedWallets:{ethereum:{createOnLogin:'users-without-wallets'}},
+    externalWallets:{disableAllExternalWallets:true,walletConnect:{enabled:false}},
   }}>{children}</PrivyProvider>;
 }

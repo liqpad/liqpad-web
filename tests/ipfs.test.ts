@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { toGatewayUrl, toIpfsUri } from '../lib/ipfs';
+import { toBrowserImageUrl, toGatewayUrl, toIpfsUri } from '../lib/ipfs';
 
 describe('IPFS URI normalization', () => {
   it('preserves native IPFS URIs', () => {
@@ -17,5 +17,10 @@ describe('IPFS URI normalization', () => {
 
   it('renders native IPFS URIs through the configured gateway', () => {
     assert.equal(toGatewayUrl('ipfs://bafy-test/logo.png','https://example.mypinata.cloud/ipfs/'),'https://example.mypinata.cloud/ipfs/bafy-test/logo.png');
+  });
+
+  it('routes IPFS browser images through the same-origin proxy',()=>{
+    assert.equal(toBrowserImageUrl('https://gateway.pinata.cloud/ipfs/bafy-test/logo.png'),'/api/ipfs/bafy-test/logo.png');
+    assert.equal(toBrowserImageUrl('https://liqpad.com/icon.png'),'https://liqpad.com/icon.png');
   });
 });
