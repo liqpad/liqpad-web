@@ -1,6 +1,7 @@
 'use client';
 import { WagmiProvider, createConfig, http } from 'wagmi';
 import { injected, walletConnect } from 'wagmi/connectors';
+import { RainbowKitProvider } from '@rainbow-me/rainbowkit';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useState } from 'react';
 import { chain, rpcUrl } from '@/lib/chain';
@@ -13,5 +14,5 @@ const config = createConfig({ chains: [chain], connectors, transports: { [base.i
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [client] = useState(() => new QueryClient());
-  return <PrivyAgentProvider><WagmiProvider config={config}><QueryClientProvider client={client}>{children}</QueryClientProvider></WagmiProvider></PrivyAgentProvider>;
+  return <PrivyAgentProvider><WagmiProvider config={config}><QueryClientProvider client={client}><RainbowKitProvider>{children}</RainbowKitProvider></QueryClientProvider></WagmiProvider></PrivyAgentProvider>;
 }
