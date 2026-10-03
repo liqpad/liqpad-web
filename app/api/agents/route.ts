@@ -33,6 +33,7 @@ export async function POST(req:Request){
     const wallet=await privyServer().wallets().create({chain_type:'ethereum',external_id:externalId,display_name:`Liqpad agent: ${name}`,idempotency_key:`agent-${id}`});
     const row={id,agent_id:agentId,slug,name,symbol,avatar_url:text(body.avatarUrl,500)||null,description,mission,personality,communication_style:text(body.communicationStyle,500)||null,website:text(body.website,300)||null,twitter:text(body.twitter,100)||null,human_creator:getAddress(body.humanCreator),agent_wallet_address:getAddress(wallet.address),status:'wallet_ready',vitality:'unlaunched'};
     const {data,error}=await db.from('agents').insert(row).select(publicFields).single();
+    if(error?.code==='23505')return NextResponse.json({error:'This agent slug is already registered. Choose a different slug; agent names may be shared.'},{status:409});
     if(error)throw error;
     const binding=await db.from('agent_wallet_bindings').insert({agent_id:id,owner_privy_user_id:auth.user_id,privy_wallet_id:wallet.id,external_id:externalId});
     if(binding.error){await db.from('agents').delete().eq('id',id);throw binding.error}

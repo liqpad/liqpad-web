@@ -7,7 +7,7 @@ export function BurnFlame({active=true,className=''}:{active?:boolean;className?
 export function BurnBadge({raw,symbol}:{raw?:string|null;symbol:string}){
   if(raw==null)return <span className="text-muted">Burn indexing…</span>;
   const active=BigInt(raw)>0n;
-  return <span className={`inline-flex min-w-0 items-center gap-2 ${active?'text-orange-200':'text-muted'}`} title={`${supplyDisplay(raw)??'0'} ${symbol} permanently burned`}><BurnFlame active={active}/><span className="truncate"><b>{supplyDisplay(raw)??'0'} {symbol}</b> burned</span></span>;
+  return <span className={`inline-flex max-w-full min-w-0 items-center gap-2 ${active?'text-orange-200':'text-muted'}`} title={`${supplyDisplay(raw)??'0'} ${symbol} permanently burned`}><BurnFlame active={active}/><span className="min-w-0 truncate"><b>{supplyDisplay(raw)??'0'} {symbol}</b> burned</span></span>;
 }
 
 export function BurnProgress({raw}:{raw:string}){

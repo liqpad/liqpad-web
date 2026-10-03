@@ -13,6 +13,10 @@ test('agent identifiers and public slugs are deterministic',()=>{
   assert.equal(agentIdFor('018f-test'),agentIdFor('018f-test'));
   assert.match(agentIdFor('018f-test'),/^0x[0-9a-f]{64}$/);
 });
+test('slug variants normalize to one canonical identity',()=>{
+  assert.equal(normalizeAgentSlug(' LIQFUN '),normalizeAgentSlug('liqfun'));
+  assert.equal(normalizeAgentSlug('neon--oracle'),normalizeAgentSlug('Neon Oracle'));
+});
 test('volume maps to explicit agent vitality bands',()=>{
   assert.equal(vitalityForVolume(0),'dormant');assert.equal(vitalityForVolume(1),'low_compute');assert.equal(vitalityForVolume(1_000),'conserving');assert.equal(vitalityForVolume(10_000),'active');
 });
